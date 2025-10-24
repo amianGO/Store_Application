@@ -2,6 +2,7 @@ package com.example.inventory_app.Controllers;
 
 import com.example.inventory_app.Entities.Cliente;
 import com.example.inventory_app.Services.ClienteService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class ClienteController {
     private ClienteService clienteService;
 
     @PostMapping
-    public ResponseEntity<Cliente> crear(@RequestBody Cliente cliente) {
+    public ResponseEntity<Cliente> crear(@Valid @RequestBody Cliente cliente) {
         return ResponseEntity.ok(clienteService.save(cliente));
     }
 
@@ -52,7 +53,7 @@ public class ClienteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Cliente> actualizar(@PathVariable Long id, @RequestBody Cliente cliente) {
+    public ResponseEntity<Cliente> actualizar(@PathVariable Long id, @Valid @RequestBody Cliente cliente) {
         return clienteService.findById(id)
                 .map(clienteExistente -> {
                     cliente.setId(id);

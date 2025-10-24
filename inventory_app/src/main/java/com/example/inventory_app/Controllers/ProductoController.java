@@ -3,6 +3,7 @@ package com.example.inventory_app.Controllers;
 import com.example.inventory_app.Entities.Producto;
 import com.example.inventory_app.Entities.CategoriaProducto;
 import com.example.inventory_app.Services.ProductoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,7 @@ public class ProductoController {
     private ProductoService productoService;
 
     @PostMapping
-    public ResponseEntity<Producto> crear(@RequestBody Producto producto) {
+    public ResponseEntity<Producto> crear(@Valid @RequestBody Producto producto) {
         return ResponseEntity.ok(productoService.save(producto));
     }
 
@@ -61,7 +62,7 @@ public class ProductoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizar(@PathVariable Long id, @RequestBody Producto producto) {
+    public ResponseEntity<Producto> actualizar(@PathVariable Long id, @Valid @RequestBody Producto producto) {
         return productoService.findById(id)
                 .map(productoExistente -> {
                     producto.setId(id);
@@ -86,5 +87,10 @@ public class ProductoController {
     @GetMapping("/buscar")
     public ResponseEntity<List<Producto>> buscarPorNombre(@RequestParam String nombre) {
         return ResponseEntity.ok(productoService.findByNombre(nombre));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Producto>> listarTodos() {
+        return ResponseEntity.ok(productoService.findAll());
     }
 }

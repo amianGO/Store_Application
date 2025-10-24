@@ -33,6 +33,9 @@ public class FacturaServiceImpl implements FacturaService {
         factura.setFechaEmision(new Date());
         factura.setEstado("COMPLETADA");
         
+        // Calcular totales antes de guardar
+        factura.calcularTotales();
+        
         // Actualizar stock de productos
         factura.getDetalles().forEach(detalle -> {
             productoService.actualizarStock(

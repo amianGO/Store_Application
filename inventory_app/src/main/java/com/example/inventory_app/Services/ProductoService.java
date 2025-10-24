@@ -76,4 +76,10 @@ public interface ProductoService {
      * @return Lista de productos que coinciden
      */
     List<Producto> findByNombre(String nombre);
+    
+    /**
+     * Obtiene todos los productos.
+     * @return Lista de todos los productos
+     */
+    List<Producto> findAll();
 }

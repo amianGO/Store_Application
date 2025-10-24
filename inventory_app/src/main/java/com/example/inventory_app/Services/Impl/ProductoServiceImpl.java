@@ -91,4 +91,10 @@ public class ProductoServiceImpl implements ProductoService {
     public List<Producto> findByNombre(String nombre) {
         return productoRepository.findByNombreContainingIgnoreCaseAndEstadoActivoTrue(nombre);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Producto> findAll() {
+        return productoRepository.findAll();
+    }
 }

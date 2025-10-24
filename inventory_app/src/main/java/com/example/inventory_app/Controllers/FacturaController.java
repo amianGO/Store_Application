@@ -8,6 +8,7 @@ import com.example.inventory_app.Services.ProductoService;
 import com.example.inventory_app.Controllers.dto.FacturaCreacionDTO;
 import com.example.inventory_app.Entities.DetalleFactura;
 import com.example.inventory_app.Entities.Producto;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +41,7 @@ public class FacturaController {
     private ProductoService productoService;
 
     @PostMapping
-    public ResponseEntity<Factura> crear(@RequestBody FacturaCreacionDTO facturaDTO) {
+    public ResponseEntity<Factura> crear(@Valid @RequestBody FacturaCreacionDTO facturaDTO) {
         Factura factura = new Factura();
         factura.setCliente(clienteService.findById(facturaDTO.getClienteId())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado")));

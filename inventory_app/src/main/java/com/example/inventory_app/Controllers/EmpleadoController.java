@@ -2,6 +2,7 @@ package com.example.inventory_app.Controllers;
 
 import com.example.inventory_app.Entities.Empleado;
 import com.example.inventory_app.Services.EmpleadoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,7 +27,7 @@ public class EmpleadoController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Empleado> crear(@RequestBody Empleado empleado) {
+    public ResponseEntity<Empleado> crear(@Valid @RequestBody Empleado empleado) {
         return ResponseEntity.ok(empleadoService.save(empleado));
     }
 
@@ -92,7 +93,7 @@ public class EmpleadoController {
     }
 
     @PostMapping("/registro")
-    public ResponseEntity<Empleado> registrar(@RequestBody EmpleadoRegistroDTO empleadoDTO) {
+    public ResponseEntity<Empleado> registrar(@Valid @RequestBody EmpleadoRegistroDTO empleadoDTO) {
         Empleado empleado = new Empleado();
         empleado.setNombre(empleadoDTO.getNombre());
         empleado.setApellido(empleadoDTO.getApellido());

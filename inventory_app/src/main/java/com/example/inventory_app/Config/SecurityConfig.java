@@ -6,6 +6,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+
 import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
@@ -29,6 +35,23 @@ public class SecurityConfig {
     }
 
     /**
+     * Configura CORS para permitir peticiones desde el frontend.
+     * @return CorsConfigurationSource
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    /**
      * Configura la cadena de filtros de seguridad.
      * Define las reglas de seguridad para las diferentes rutas de la aplicación.
      * 
@@ -39,15 +62,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF para APIs
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Endpoints públicos
-                .requestMatchers("/api/empleados/registro").permitAll() // Permitir registro sin autenticación
-                .requestMatchers("/api/admin/**").hasRole("ADMIN") // Solo admin
-                .requestMatchers("/api/ventas/**").hasAnyRole("VENDEDOR", "ADMIN") // Vendedores y admin
+                .requestMatchers("/api/auth/**").permitAll() // Endpoints de autenticación públicos
+                .requestMatchers("/api/productos/**").permitAll() // Productos públicos para consulta
+                .requestMatchers("/api/clientes/**").permitAll() // Clientes públicos
+                .requestMatchers("/api/carritos/**").permitAll() // Carritos públicos
+                .requestMatchers("/api/facturas/**").permitAll() // Facturas públicas
+                .requestMatchers("/api/cajas/**").permitAll() // Cajas públicas
+                .requestMatchers("/api/estadisticas/**").permitAll() // Estadísticas públicas
+                .requestMatchers("/api/empleados/**").hasRole("ADMIN") // Solo admin para empleados
                 .anyRequest().authenticated() // Resto requiere autenticación
             )
-            .httpBasic(); // Autenticación básica para pruebas
+            .httpBasic(withDefaults()); // Autenticación básica para pruebas
 
         return http.build();
     }
