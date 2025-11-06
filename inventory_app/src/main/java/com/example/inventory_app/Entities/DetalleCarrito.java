@@ -40,4 +40,12 @@ public class DetalleCarrito {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
+
+    @PrePersist
+    @PreUpdate
+    public void calcularSubtotal() {
+        if (this.cantidad != null && this.precioUnitario != null) {
+            this.subtotal = this.precioUnitario.multiply(new BigDecimal(this.cantidad));
+        }
+    }
 }

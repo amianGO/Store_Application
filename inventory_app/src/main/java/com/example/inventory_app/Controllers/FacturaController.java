@@ -56,6 +56,7 @@ public class FacturaController {
             detalle.setProducto(producto);
             detalle.setCantidad(detalleDTO.getCantidad());
             detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.calcularSubtotal(); // Calculamos el subtotal explícitamente
             factura.addDetalle(detalle);
         }
 

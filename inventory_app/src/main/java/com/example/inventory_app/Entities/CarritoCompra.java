@@ -46,4 +46,18 @@ public class CarritoCompra {
 
     @OneToMany(mappedBy = "carritoCompra", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetalleCarrito> items = new ArrayList<>();
+
+    public void addDetalle(DetalleCarrito detalle) {
+        if (items == null) {
+            items = new ArrayList<>();
+        }
+        items.add(detalle);
+        detalle.setCarritoCompra(this);
+        
+        // Actualizar el total estimado
+        if (totalEstimado == null) {
+            totalEstimado = BigDecimal.ZERO;
+        }
+        totalEstimado = totalEstimado.add(detalle.getSubtotal());
+    }
 }

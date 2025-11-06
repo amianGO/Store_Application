@@ -1,14 +1,20 @@
 package com.example.inventory_app.Config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import io.jsonwebtoken.security.Keys;
+import java.util.Base64;
 
 import java.util.Arrays;
 
@@ -24,6 +30,19 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JwtService jwtService;
+
+    /**
+     * Configura el decodificador JWT
+     */
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(Keys.hmacShaKeyFor(
+            Base64.getDecoder().decode(jwtService.getSecretKey())
+        )).build();
+    }
 
     /**
      * Configura el codificador de contraseñas BCrypt.
@@ -65,17 +84,18 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF para APIs
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Endpoints de autenticación públicos
-                .requestMatchers("/api/productos/**").permitAll() // Productos públicos para consulta
-                .requestMatchers("/api/clientes/**").permitAll() // Clientes públicos
-                .requestMatchers("/api/carritos/**").permitAll() // Carritos públicos
-                .requestMatchers("/api/facturas/**").permitAll() // Facturas públicas
-                .requestMatchers("/api/cajas/**").permitAll() // Cajas públicas
-                .requestMatchers("/api/estadisticas/**").permitAll() // Estadísticas públicas
-                .requestMatchers("/api/empleados/**").hasRole("ADMIN") // Solo admin para empleados
-                .anyRequest().authenticated() // Resto requiere autenticación
+                .requestMatchers("/api/auth/**").permitAll() // Solo los endpoints de autenticación son públicos
+                .requestMatchers("/api/productos/publico/**").permitAll() // Solo consultas públicas de productos
+                .requestMatchers("/api/empleados/**").hasRole("ADMIN")
+                .requestMatchers("/api/estadisticas/**").hasAnyRole("ADMIN", "GERENTE")
+                .anyRequest().authenticated()
             )
-            .httpBasic(withDefaults()); // Autenticación básica para pruebas
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.decoder(jwtDecoder()))
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            );
 
         return http.build();
     }

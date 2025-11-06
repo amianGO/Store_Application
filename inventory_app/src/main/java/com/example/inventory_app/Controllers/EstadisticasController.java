@@ -4,6 +4,7 @@ import com.example.inventory_app.Services.FacturaService;
 import com.example.inventory_app.Services.ProductoService;
 import com.example.inventory_app.Services.ClienteService;
 import com.example.inventory_app.Services.EmpleadoService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -58,7 +59,8 @@ public class EstadisticasController {
     }
 
     @GetMapping("/ventas/dia")
-    public ResponseEntity<Double> obtenerVentasDelDia(@RequestParam Date fecha) {
+    public ResponseEntity<Double> obtenerVentasDelDia(
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date fecha) {
         return ResponseEntity.ok(facturaService.calcularTotalVentasDia(fecha));
     }
 }

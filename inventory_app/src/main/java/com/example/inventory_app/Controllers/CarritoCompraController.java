@@ -1,7 +1,9 @@
 package com.example.inventory_app.Controllers;
 
-import com.example.inventory_app.Entities.CarritoCompra;
-import com.example.inventory_app.Services.CarritoCompraService;
+import com.example.inventory_app.Controllers.dto.CarritoCreacionDTO;
+import com.example.inventory_app.Entities.*;
+import com.example.inventory_app.Services.*;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +24,45 @@ public class CarritoCompraController {
     @Autowired
     private CarritoCompraService carritoCompraService;
 
+    @Autowired
+    private ClienteService clienteService;
+
+    @Autowired
+    private EmpleadoService empleadoService;
+
+    @Autowired
+    private ProductoService productoService;
+
     @PostMapping
-    public ResponseEntity<CarritoCompra> crear(@RequestBody CarritoCompra carritoCompra) {
-        return ResponseEntity.ok(carritoCompraService.create(carritoCompra));
+    public ResponseEntity<CarritoCompra> crear(@Valid @RequestBody CarritoCreacionDTO carritoDTO) {
+        // Validar que el cliente y empleado existan
+        Cliente cliente = clienteService.findById(carritoDTO.getClienteId())
+            .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        
+        Empleado empleado = empleadoService.findById(carritoDTO.getEmpleadoId())
+            .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+        // Crear el carrito
+        CarritoCompra carrito = new CarritoCompra();
+        carrito.setCliente(cliente);
+        carrito.setEmpleado(empleado);
+
+        // Agregar los items si existen
+        if (carritoDTO.getItems() != null) {
+            for (CarritoCreacionDTO.DetalleCarritoDTO detalleDTO : carritoDTO.getItems()) {
+                Producto producto = productoService.findById(detalleDTO.getProductoId())
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + detalleDTO.getProductoId()));
+                
+                DetalleCarrito detalle = new DetalleCarrito();
+                detalle.setProducto(producto);
+                detalle.setCantidad(detalleDTO.getCantidad());
+                detalle.setPrecioUnitario(producto.getPrecioVenta());
+                detalle.calcularSubtotal(); // Calculamos el subtotal antes de agregar
+                carrito.addDetalle(detalle);
+            }
+        }
+
+        return ResponseEntity.ok(carritoCompraService.create(carrito));
     }
 
     @GetMapping("/{id}")

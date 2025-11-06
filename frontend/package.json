@@ -15,12 +15,12 @@
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "@reduxjs/toolkit": "^2.9.0",
-    "axios": "^1.12.2",
+    "axios": "^1.13.1",
     "formik": "^2.4.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.9.3",
+    "react-router-dom": "^7.9.5",
     "yup": "^1.7.1"
   },
   "devDependencies": {
