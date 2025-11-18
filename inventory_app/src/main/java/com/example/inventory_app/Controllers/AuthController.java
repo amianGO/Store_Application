@@ -37,6 +37,7 @@ public class AuthController {
                     
                     LoginResponse response = new LoginResponse(
                         token,
+                        empleado.getId(),
                         empleado.getUsuario(),
                         empleado.getRol(),
                         empleado.getNombre(),

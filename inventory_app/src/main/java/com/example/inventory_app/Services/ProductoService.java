@@ -65,10 +65,10 @@ public interface ProductoService {
     Producto actualizarStock(Long id, int cantidad);
     
     /**
-     * Desactiva un producto.
-     * @param id ID del producto a desactivar
+     * Elimina un producto físicamente.
+     * @param id ID del producto a eliminar
      */
-    void deactivate(Long id);
+    void delete(Long id);
     
     /**
      * Busca productos por nombre.

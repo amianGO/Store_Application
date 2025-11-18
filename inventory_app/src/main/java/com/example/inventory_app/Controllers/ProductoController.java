@@ -63,10 +63,17 @@ public class ProductoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Producto> actualizar(@PathVariable Long id, @Valid @RequestBody Producto producto) {
+        System.out.println("=== ACTUALIZANDO PRODUCTO ===");
+        System.out.println("ID: " + id);
+        System.out.println("Estado Activo recibido: " + producto.isEstadoActivo());
+        System.out.println("Stock recibido: " + producto.getStock());
+        
         return productoService.findById(id)
                 .map(productoExistente -> {
                     producto.setId(id);
-                    return ResponseEntity.ok(productoService.save(producto));
+                    Producto result = productoService.save(producto);
+                    System.out.println("Estado Activo final: " + result.isEstadoActivo());
+                    return ResponseEntity.ok(result);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -79,8 +86,8 @@ public class ProductoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> desactivar(@PathVariable Long id) {
-        productoService.deactivate(id);
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        productoService.delete(id);
         return ResponseEntity.ok().build();
     }
 

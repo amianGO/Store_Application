@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,7 +19,7 @@ import java.util.Base64;
 
 import java.util.Arrays;
 
-import static org.springframework.security.config.Customizer.withDefaults;
+
 
 /**
  * Configuración de seguridad para la aplicación.
@@ -42,6 +43,25 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(Keys.hmacShaKeyFor(
             Base64.getDecoder().decode(jwtService.getSecretKey())
         )).build();
+    }
+
+    /**
+     * Convierte los claims del JWT en authorities de Spring Security
+     */
+    @Bean
+    public org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter jwtAuthenticationConverter() {
+        org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter converter = 
+            new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter();
+        
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            String rol = jwt.getClaimAsString("rol");
+            if (rol != null) {
+                return java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + rol));
+            }
+            return java.util.List.of();
+        });
+        
+        return converter;
     }
 
     /**
@@ -86,12 +106,16 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() // Solo los endpoints de autenticación son públicos
                 .requestMatchers("/api/productos/publico/**").permitAll() // Solo consultas públicas de productos
-                .requestMatchers("/api/empleados/**").hasRole("ADMIN")
+                .requestMatchers("/api/empleados").authenticated() // Permitir GET a empleados a usuarios autenticados
+                .requestMatchers("/api/empleados/**").hasRole("ADMIN") // Otros endpoints de empleados requieren ADMIN
                 .requestMatchers("/api/estadisticas/**").hasAnyRole("ADMIN", "GERENTE")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.decoder(jwtDecoder()))
+                .jwt(jwt -> jwt
+                    .decoder(jwtDecoder())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                )
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

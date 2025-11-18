@@ -28,9 +28,33 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     public Producto save(Producto producto) {
         if (producto.getId() == null) {
+            // Producto nuevo
             producto.setEstadoActivo(true);
             producto.setFechaRegistro(new java.util.Date());
+            
+            // Solo aplicar lógica automática en productos nuevos
+            if (producto.getStock() != null && producto.getStock() == 0) {
+                producto.setEstadoActivo(false);
+            }
+        } else {
+            // Producto existente - verificar si cambió el stock
+            Optional<Producto> productoExistente = productoRepository.findById(producto.getId());
+            if (productoExistente.isPresent()) {
+                Producto existente = productoExistente.get();
+                
+                // Solo aplicar lógica automática si el stock cambió
+                if (!existente.getStock().equals(producto.getStock())) {
+                    if (producto.getStock() != null && producto.getStock() == 0) {
+                        producto.setEstadoActivo(false);
+                    } else if (producto.getStock() != null && producto.getStock() > 0 && !existente.isEstadoActivo()) {
+                        // Solo reactivar si estaba inactivo Y ahora tiene stock
+                        producto.setEstadoActivo(true);
+                    }
+                }
+                // Si el stock no cambió, respetar el estadoActivo que viene del frontend
+            }
         }
+        
         return productoRepository.save(producto);
     }
 
@@ -75,15 +99,22 @@ public class ProductoServiceImpl implements ProductoService {
         }
         
         producto.setStock(nuevoStock);
+        
+        // Lógica automática: Si stock llega a 0, desactivar producto
+        if (nuevoStock == 0) {
+            producto.setEstadoActivo(false);
+        } else if (nuevoStock > 0 && !producto.isEstadoActivo()) {
+            // Si se agrega stock a un producto inactivo, reactivarlo
+            producto.setEstadoActivo(true);
+        }
+        
         return productoRepository.save(producto);
     }
 
     @Override
-    public void deactivate(Long id) {
-        productoRepository.findById(id).ifPresent(producto -> {
-            producto.setEstadoActivo(false);
-            productoRepository.save(producto);
-        });
+    public void delete(Long id) {
+        // Eliminación física del producto
+        productoRepository.deleteById(id);
     }
 
     @Override

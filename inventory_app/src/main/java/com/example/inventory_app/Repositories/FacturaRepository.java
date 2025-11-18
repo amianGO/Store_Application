@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +47,7 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
      * @param fechaFin Fecha final
      * @return Lista de facturas dentro del rango de fechas
      */
-    List<Factura> findByFechaEmisionBetween(Date fechaInicio, Date fechaFin);
+    List<Factura> findByFechaEmisionBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin);
     
     /**
      * Busca facturas por estado.

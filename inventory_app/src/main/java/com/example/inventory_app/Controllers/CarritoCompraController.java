@@ -53,11 +53,7 @@ public class CarritoCompraController {
                 Producto producto = productoService.findById(detalleDTO.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + detalleDTO.getProductoId()));
                 
-                DetalleCarrito detalle = new DetalleCarrito();
-                detalle.setProducto(producto);
-                detalle.setCantidad(detalleDTO.getCantidad());
-                detalle.setPrecioUnitario(producto.getPrecioVenta());
-                detalle.calcularSubtotal(); // Calculamos el subtotal antes de agregar
+                DetalleCarrito detalle = new DetalleCarrito(producto, detalleDTO.getCantidad());
                 carrito.addDetalle(detalle);
             }
         }

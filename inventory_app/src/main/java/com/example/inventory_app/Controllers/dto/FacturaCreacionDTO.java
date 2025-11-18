@@ -39,5 +39,10 @@ public class FacturaCreacionDTO {
         @Min(value = 1, message = "La cantidad debe ser mayor a 0")
         @JsonProperty(required = true)
         private Integer cantidad;
+        
+        @JsonProperty(value = "descuento")
+        @DecimalMin(value = "0.0", message = "El descuento no puede ser negativo")
+        @DecimalMax(value = "100.0", message = "El descuento no puede ser mayor al 100%")
+        private java.math.BigDecimal descuento = java.math.BigDecimal.ZERO;
     }
 }

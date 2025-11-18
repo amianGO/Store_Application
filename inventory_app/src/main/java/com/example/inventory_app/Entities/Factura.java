@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,17 +31,21 @@ public class Factura {
     @Column(nullable = false, unique = true, length = 20)
     private String numeroFactura;
 
-    @ManyToOne
-    @JoinColumn(name = "cliente_id", nullable = false)
-    private Cliente cliente;
+    // Almacenar solo IDs para evitar problemas de borrado
+    @Column(name = "cliente_id", nullable = false)
+    private Long clienteId;
+    
+    @Column(name = "cliente_nombre", nullable = false)
+    private String clienteNombre;
 
-    @ManyToOne
-    @JoinColumn(name = "empleado_id", nullable = false)
-    private Empleado empleado;
+    @Column(name = "empleado_id", nullable = false)
+    private Long empleadoId;
+    
+    @Column(name = "empleado_nombre", nullable = false)
+    private String empleadoNombre;
 
-    @Column(name = "fecha_emision")
-    @Temporal(TemporalType.TIMESTAMP)
-    private java.util.Date fechaEmision;
+    @Column(name = "fecha_emision", nullable = false)
+    private LocalDateTime fechaEmision;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
@@ -54,7 +59,8 @@ public class Factura {
     @Column(length = 20)
     private String estado;
 
-    @OneToMany(mappedBy = "factura", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Los detalles se manejan por separado usando facturaId
+    @Transient
     private List<DetalleFactura> detalles = new ArrayList<>();
 
     /**
@@ -66,7 +72,7 @@ public class Factura {
             this.numeroFactura = "FAC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
         if (this.fechaEmision == null) {
-            this.fechaEmision = new java.util.Date();
+            this.fechaEmision = LocalDateTime.now();
         }
         if (this.estado == null) {
             this.estado = "PENDIENTE";
@@ -78,7 +84,7 @@ public class Factura {
      */
     public void addDetalle(DetalleFactura detalle) {
         detalles.add(detalle);
-        detalle.setFactura(this);
+        detalle.setFacturaId(this.id);
     }
 
     /**

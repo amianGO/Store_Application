@@ -26,7 +26,6 @@ public class EmpleadoController {
     private EmpleadoService empleadoService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Empleado> crear(@Valid @RequestBody Empleado empleado) {
         return ResponseEntity.ok(empleadoService.save(empleado));
     }
@@ -62,13 +61,11 @@ public class EmpleadoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Empleado>> listarActivos() {
         return ResponseEntity.ok(empleadoService.findAllActive());
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Empleado> actualizar(@PathVariable Long id, @RequestBody Empleado empleado) {
         return empleadoService.findById(id)
                 .map(empleadoExistente -> {
@@ -79,7 +76,6 @@ public class EmpleadoController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> desactivar(@PathVariable Long id) {
         empleadoService.deactivate(id);
         return ResponseEntity.ok().build();

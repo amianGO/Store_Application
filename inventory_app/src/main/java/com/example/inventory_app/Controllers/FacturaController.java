@@ -6,6 +6,7 @@ import com.example.inventory_app.Services.ClienteService;
 import com.example.inventory_app.Services.EmpleadoService;
 import com.example.inventory_app.Services.ProductoService;
 import com.example.inventory_app.Controllers.dto.FacturaCreacionDTO;
+import com.example.inventory_app.Controllers.dto.FacturaResponseDTO;
 import com.example.inventory_app.Entities.DetalleFactura;
 import com.example.inventory_app.Entities.Producto;
 import jakarta.validation.Valid;
@@ -40,23 +41,56 @@ public class FacturaController {
     @Autowired
     private ProductoService productoService;
 
+    @GetMapping
+    public ResponseEntity<List<FacturaResponseDTO>> listarTodas() {
+        List<FacturaResponseDTO> facturas = facturaService.findAll()
+                .stream()
+                .map(FacturaResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(facturas);
+    }
+
     @PostMapping
     public ResponseEntity<Factura> crear(@Valid @RequestBody FacturaCreacionDTO facturaDTO) {
         Factura factura = new Factura();
-        factura.setCliente(clienteService.findById(facturaDTO.getClienteId())
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado")));
-        factura.setEmpleado(empleadoService.findById(facturaDTO.getEmpleadoId())
-                .orElseThrow(() -> new RuntimeException("Empleado no encontrado")));
+        
+        // Obtener y almacenar información del cliente
+        var cliente = clienteService.findById(facturaDTO.getClienteId())
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        factura.setClienteId(cliente.getId());
+        factura.setClienteNombre(cliente.getNombre() + " " + cliente.getApellido());
+        
+        // Obtener y almacenar información del empleado
+        var empleado = empleadoService.findById(facturaDTO.getEmpleadoId())
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+        factura.setEmpleadoId(empleado.getId());
+        factura.setEmpleadoNombre(empleado.getNombre() + " " + empleado.getApellido());
 
         for (FacturaCreacionDTO.DetalleFacturaDTO detalleDTO : facturaDTO.getDetalles()) {
             Producto producto = productoService.findById(detalleDTO.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
             
+            // DEBUG: Imprimir valores recibidos
+            System.out.println("=== DEBUG DETALLE FACTURA ===");
+            System.out.println("Producto: " + producto.getNombre());
+            System.out.println("Precio unitario: " + producto.getPrecioVenta());
+            System.out.println("Cantidad: " + detalleDTO.getCantidad());
+            System.out.println("Descuento recibido: " + detalleDTO.getDescuento());
+            
             DetalleFactura detalle = new DetalleFactura();
-            detalle.setProducto(producto);
+            // Establecer datos del producto directamente en el detalle
+            detalle.setProductoCodigo(producto.getCodigo());
+            detalle.setProductoNombre(producto.getNombre());
+            detalle.setProductoCategoria(producto.getCategoria().toString());
             detalle.setCantidad(detalleDTO.getCantidad());
             detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.setDescuento(detalleDTO.getDescuento() != null ? detalleDTO.getDescuento() : java.math.BigDecimal.ZERO);
             detalle.calcularSubtotal(); // Calculamos el subtotal explícitamente
+            
+            // DEBUG: Imprimir resultado calculado
+            System.out.println("Subtotal calculado: " + detalle.getSubtotal());
+            System.out.println("==============================");
+            
             factura.addDetalle(detalle);
         }
 
@@ -109,5 +143,14 @@ public class FacturaController {
     public ResponseEntity<Void> anular(@PathVariable Long id) {
         facturaService.anularFactura(id);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        if (facturaService.findById(id).isPresent()) {
+            facturaService.delete(id);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

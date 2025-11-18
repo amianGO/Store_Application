@@ -4,14 +4,16 @@ import com.example.inventory_app.Config.Rol;
 
 public class LoginResponse {
     private String token;
+    private Long empleadoId;
     private String usuario;
     private Rol rol;
     private String nombre;
     private String apellido;
     private String cargo;
 
-    public LoginResponse(String token, String usuario, Rol rol, String nombre, String apellido, String cargo) {
+    public LoginResponse(String token, Long empleadoId, String usuario, Rol rol, String nombre, String apellido, String cargo) {
         this.token = token;
+        this.empleadoId = empleadoId;
         this.usuario = usuario;
         this.rol = rol;
         this.nombre = nombre;
@@ -26,6 +28,14 @@ public class LoginResponse {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public Long getEmpleadoId() {
+        return empleadoId;
+    }
+
+    public void setEmpleadoId(Long empleadoId) {
+        this.empleadoId = empleadoId;
     }
 
     public String getUsuario() {

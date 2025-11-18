@@ -28,9 +28,15 @@ public class DetalleCarrito {
     @JoinColumn(name = "carrito_id", nullable = false)
     private CarritoCompra carritoCompra;
 
-    @ManyToOne
-    @JoinColumn(name = "producto_id", nullable = false)
-    private Producto producto;
+    // Datos del producto almacenados directamente (no referencia)
+    @Column(name = "producto_codigo", nullable = false, length = 50)
+    private String productoCodigo;
+    
+    @Column(name = "producto_nombre", nullable = false, length = 100)
+    private String productoNombre;
+    
+    @Column(name = "producto_categoria", length = 50)
+    private String productoCategoria;
 
     @Column(nullable = false)
     private Integer cantidad;
@@ -47,5 +53,17 @@ public class DetalleCarrito {
         if (this.cantidad != null && this.precioUnitario != null) {
             this.subtotal = this.precioUnitario.multiply(new BigDecimal(this.cantidad));
         }
+    }
+    
+    /**
+     * Constructor para crear detalle desde un producto
+     */
+    public DetalleCarrito(Producto producto, Integer cantidad) {
+        this.productoCodigo = producto.getCodigo();
+        this.productoNombre = producto.getNombre();
+        this.productoCategoria = producto.getCategoria() != null ? producto.getCategoria().toString() : "";
+        this.cantidad = cantidad;
+        this.precioUnitario = producto.getPrecioVenta();
+        calcularSubtotal();
     }
 }

@@ -14,6 +14,12 @@ import java.util.Optional;
 public interface FacturaService {
     
     /**
+     * Obtiene todas las facturas.
+     * @return Lista de todas las facturas
+     */
+    List<Factura> findAll();
+    
+    /**
      * Crea una nueva factura.
      * @param factura Factura a crear
      * @return Factura creada
@@ -75,4 +81,10 @@ public interface FacturaService {
      * @param id ID de la factura a anular
      */
     void anularFactura(Long id);
+    
+    /**
+     * Elimina una factura.
+     * @param id ID de la factura a eliminar
+     */
+    void delete(Long id);
 }
