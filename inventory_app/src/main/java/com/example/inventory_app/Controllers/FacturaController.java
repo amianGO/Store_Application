@@ -79,6 +79,7 @@ public class FacturaController {
             
             DetalleFactura detalle = new DetalleFactura();
             // Establecer datos del producto directamente en el detalle
+            detalle.setProductoId(producto.getId());  // ✅ Asignar el ID del producto
             detalle.setProductoCodigo(producto.getCodigo());
             detalle.setProductoNombre(producto.getNombre());
             detalle.setProductoCategoria(producto.getCategoria().toString());

@@ -28,6 +28,10 @@ public class DetalleFactura {
     @Column(name = "factura_id", nullable = false)
     private Long facturaId;
 
+    // ID del producto (requerido por la base de datos)
+    @Column(name = "producto_id", nullable = false)
+    private Long productoId;
+
     // Datos del producto almacenados directamente (no referencia)
     @Column(name = "producto_codigo", nullable = false, length = 50)
     private String productoCodigo;
@@ -71,6 +75,7 @@ public class DetalleFactura {
      * Constructor para crear detalle desde un producto
      */
     public DetalleFactura(Producto producto, Integer cantidad, BigDecimal descuento) {
+        this.productoId = producto.getId();
         this.productoCodigo = producto.getCodigo();
         this.productoNombre = producto.getNombre();
         this.productoCategoria = producto.getCategoria() != null ? producto.getCategoria().toString() : "";

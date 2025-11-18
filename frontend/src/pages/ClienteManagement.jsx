@@ -25,8 +25,7 @@ export default function ClienteManagement() {
     documento: '',
     telefono: '',
     email: '',
-    direccion: '',
-    tipoCliente: 'REGULAR'
+    direccion: ''
   });
 
   const navigate = useNavigate();
@@ -66,8 +65,7 @@ export default function ClienteManagement() {
         documento: cliente.documento,
         telefono: cliente.telefono || '',
         email: cliente.email || '',
-        direccion: cliente.direccion || '',
-        tipoCliente: cliente.tipoCliente || 'REGULAR'
+        direccion: cliente.direccion || ''
       });
     } else {
       setEditingCliente(null);
@@ -77,8 +75,7 @@ export default function ClienteManagement() {
         documento: '',
         telefono: '',
         email: '',
-        direccion: '',
-        tipoCliente: 'REGULAR'
+        direccion: ''
       });
     }
     setOpenDialog(true);
@@ -93,8 +90,7 @@ export default function ClienteManagement() {
       documento: '',
       telefono: '',
       email: '',
-      direccion: '',
-      tipoCliente: 'REGULAR'
+      direccion: ''
     });
   };
 
@@ -311,11 +307,11 @@ export default function ClienteManagement() {
                         {cliente.nombre} {cliente.apellido}
                       </Typography>
                       <Chip 
-                        label={cliente.tipoCliente || 'REGULAR'}
+                        label={cliente.estadoActivo ? 'ACTIVO' : 'INACTIVO'}
                         size="small"
                         sx={{
-                          background: 'rgba(76, 175, 80, 0.2)',
-                          color: '#81c784',
+                          background: cliente.estadoActivo ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)',
+                          color: cliente.estadoActivo ? '#81c784' : '#f48fb1',
                           fontWeight: 600,
                           fontSize: '0.75rem'
                         }}
@@ -524,30 +520,7 @@ export default function ClienteManagement() {
                 }}
               />
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                select
-                label="Tipo de Cliente"
-                value={formData.tipoCliente}
-                onChange={(e) => setFormData({...formData, tipoCliente: e.target.value})}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-                    '&:hover fieldset': { borderColor: 'rgba(147, 112, 219, 0.5)' },
-                    '&.Mui-focused fieldset': { borderColor: '#9370db' },
-                  },
-                  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
-                  '& .MuiSelect-select': { color: '#fff' },
-                  '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.5)' },
-                }}
-              >
-                <MenuItem value="REGULAR">Regular</MenuItem>
-                <MenuItem value="VIP">VIP</MenuItem>
-                <MenuItem value="CORPORATIVO">Corporativo</MenuItem>
-              </TextField>
-            </Grid>
+
           </Grid>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
