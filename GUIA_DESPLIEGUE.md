@@ -29,28 +29,50 @@ Esta guía te llevará paso a paso para desplegar tu aplicación multi-tenant en
 
 ### Paso 1.2: Obtener Credenciales
 
-Una vez creada, ve a la sección **"Info"** y copia:
-- **Internal Database URL**: Para conexiones desde Render
-- **External Database URL**: Para acceso externo (migraciones)
+Una vez creada, ve a la sección **"Info"** en Render y verás dos URLs:
 
-Formato: `postgresql://usuario:password@hostname:5432/database`
+**Internal Database URL** (para Render backend):
+```
+postgresql://store_db_iqbp_user:eQlqf4sZ3qN1bd0CEzJeeU5DMKDHPubI@dpg-d4ud120gjchc73c6mr6g-a/store_db_iqbp
+```
+**Usar esta en:** Variable `DATABASE_URL` del backend en Render (Paso 2.3)
 
-### Paso 1.3: Configurar Schemas Multi-Tenant
+**External Database URL** (para tu terminal local):
+```
+postgresql://store_db_iqbp_user:eQlqf4sZ3qN1bd0CEzJeeU5DMKDHPubI@dpg-d4ud120gjchc73c6mr6g-a.oregon-postgres.render.com/store_db_iqbp
+```
+**Usar esta para:** Conectarte desde tu Mac con psql (Paso 1.3)
 
-Necesitas conectarte a la BD y crear los schemas:
+**Diferencia clave:**
+- Internal: Solo funciona dentro de Render (red interna)
+- External: Funciona desde cualquier lugar (tiene el dominio completo .oregon-postgres.render.com)
+
+### Paso 1.3: Configurar Schemas Multi-Tenant (OPCIONAL)
+
+**IMPORTANTE:** Este paso es OPCIONAL. Los schemas se crean automáticamente cuando registras empresas.
+
+Solo hazlo si quieres verificar la conexión o crear el schema template manualmente.
+
+**Desde tu Mac (no Docker, solo terminal):**
 
 ```bash
-# Instalar psql si no lo tienes (macOS)
+# 1. Instalar psql si no lo tienes
 brew install postgresql
 
-# Conectar a la BD (usa la External Database URL)
-psql "postgresql://usuario:password@hostname:5432/database"
+# 2. Conectar usando la External URL (copia exactamente la tuya)
+psql "postgresql://store_db_iqbp_user:eQlqf4sZ3qN1bd0CEzJeeU5DMKDHPubI@dpg-d4ud120gjchc73c6mr6g-a.oregon-postgres.render.com/store_db_iqbp"
 
-# Dentro de psql, crea el schema template
+# 3. Si conecta exitosamente, verás:
+# store_db_iqbp=>
+
+# 4. (OPCIONAL) Crear schema template
 CREATE SCHEMA IF NOT EXISTS template_schema;
+
+# 5. Salir
+\q
 ```
 
-**NOTA**: Los schemas de empresas (empresa_1, empresa_2, etc.) se crearán automáticamente cuando registres una nueva empresa.
+**NOTA:** Los schemas de empresas (empresa_1, empresa_2, etc.) se crean automáticamente cuando registras una nueva empresa desde la aplicación.
 
 ---
 
@@ -79,33 +101,45 @@ Asegúrate de que tu repositorio tenga:
 En la sección **"Environment Variables"**, agrega:
 
 ```bash
-# Base de Datos (copia la Internal Database URL de tu BD)
-DATABASE_URL=postgresql://usuario:password@hostname:5432/database
+# Base de Datos (USA LA INTERNAL URL - sin .oregon-postgres.render.com)
+DATABASE_URL=postgresql://store_db_iqbp_user:eQlqf4sZ3qN1bd0CEzJeeU5DMKDHPubI@dpg-d4ud120gjchc73c6mr6g-a/store_db_iqbp
 
-# JWT Secret (genera uno seguro)
-JWT_SECRET_KEY=tu_jwt_secret_key_muy_segura_de_al_menos_32_caracteres_aqui
+# JWT Secret (genera uno seguro con: openssl rand -base64 32)
+JWT_SECRET_KEY=AQUI_VA_EL_RESULTADO_DEL_COMANDO_OPENSSL
 
-# Email (Gmail App Password)
+# Email (Gmail App Password - 16 caracteres sin espacios)
 MAIL_USERNAME=tu_email@gmail.com
-MAIL_PASSWORD=tu_app_password_de_gmail
+MAIL_PASSWORD=abcdefghijklmnop
 
 # Frontend URL (actualizarás esto después de desplegar el frontend)
-FRONTEND_URL=https://tu-app.vercel.app
+FRONTEND_URL=https://placeholder.vercel.app
 
 # Spring Profile
 SPRING_PROFILES_ACTIVE=prod
 ```
 
-**IMPORTANTE - Generar JWT Secret seguro:**
-```bash
-# En terminal, genera un secret aleatorio:
-openssl rand -base64 32
-```
+**PASO A PASO para configurar:**
 
-**IMPORTANTE - Obtener Gmail App Password:**
-1. Ve a [Google Account Security](https://myaccount.google.com/security)
-2. Activa "2-Step Verification"
-3. Ve a "App passwords"
+1. **DATABASE_URL:** Copia la INTERNAL URL de Render (Paso 1.2)
+   ```
+   La que NO tiene .oregon-postgres.render.com al final
+   ```
+
+2. **JWT_SECRET_KEY:** Genera en tu Mac:
+   ```bash
+   openssl rand -base64 32
+   # Copia el resultado (ejemplo: "x7k9mP2nQ5rT8wV1yC3eF6hJ4lM7oR0s...")
+   ```
+
+3. **MAIL_USERNAME y MAIL_PASSWORD:** 
+   - Ve a https://myaccount.google.com/security
+   - Activa "Verificacion en 2 pasos"
+   - Ve a https://myaccount.google.com/apppasswords
+   - Genera password para "Mail" → "Otra app"
+   - Copia el password de 16 caracteres (sin espacios)
+
+4. **FRONTEND_URL:** Deja como placeholder por ahora
+   - Lo actualizarás después de desplegar en Vercel
 4. Genera un password para "Mail" → "Other (Custom name)"
 5. Usa ese password de 16 caracteres en `MAIL_PASSWORD`
 

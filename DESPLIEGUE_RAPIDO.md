@@ -1,24 +1,24 @@
-# ⚡ Despliegue Rápido - Comandos Esenciales
+# Despliegue Rapido - Comandos Esenciales
 
-## 🔑 Generar JWT Secret (ejecutar PRIMERO)
+## PASO 1: Generar JWT Secret (ejecutar PRIMERO)
 ```bash
 openssl rand -base64 32
 ```
-**Copiar el resultado** - Lo necesitarás en Render como `JWT_SECRET_KEY`
+Copiar el resultado - Lo necesitaras en Render como JWT_SECRET_KEY
 
 ---
 
-## 🔐 Obtener Gmail App Password
+## PASO 2: Obtener Gmail App Password
 
 1. Ve a: https://myaccount.google.com/security
-2. Activa "2-Step Verification"
+2. Activa "Verificacion en 2 pasos"
 3. Ve a: https://myaccount.google.com/apppasswords
-4. Genera password para "Mail" → "Other"
-5. Copia el password de 16 caracteres
+4. Genera password para "Mail" → "Otra app"
+5. Copia el password de 16 caracteres (sin espacios)
 
 ---
 
-## 📦 Verificar Configuración Pre-Despliegue
+## PASO 3: Verificar Configuracion Pre-Despliegue
 ```bash
 cd /Users/gaviria/Documents/dev/Proyectos_Spring/Tienda/Store_Application
 ./verificar-despliegue.sh
@@ -26,7 +26,7 @@ cd /Users/gaviria/Documents/dev/Proyectos_Spring/Tienda/Store_Application
 
 ---
 
-## 🗄️ RENDER: Base de Datos PostgreSQL
+## FASE 1: RENDER - Base de Datos PostgreSQL
 
 ### Crear Base de Datos
 ```
@@ -37,16 +37,20 @@ Render Dashboard → New + → PostgreSQL
   Plan: Free
 ```
 
-### Copiar URLs
+### Copiar URLs (IMPORTANTE - Lee EXPLICACION_URLS_BD.md)
 ```
-Después de crear:
-- Info → Internal Database URL (para backend en Render)
-- Info → External Database URL (para acceso local/migraciones)
+Despues de crear, ve a Info:
+
+- Internal Database URL (para backend en Render)
+  Ejemplo: postgresql://user:pass@dpg-xxxxx-a/store_db
+  
+- External Database URL (para tu Mac con psql)
+  Ejemplo: postgresql://user:pass@dpg-xxxxx-a.oregon-postgres.render.com/store_db
 ```
 
 ---
 
-## ☕ RENDER: Backend (Spring Boot)
+## FASE 2: RENDER - Backend (Spring Boot)
 
 ### Crear Web Service
 ```
@@ -61,7 +65,7 @@ Render Dashboard → New + → Web Service
 
 ### Variables de Entorno (copiar exactamente)
 ```bash
-DATABASE_URL=[pegar Internal Database URL aquí]
+DATABASE_URL=postgresql://store_db_iqbp_user:eQlqf4sZ3qN1bd0CEzJeeU5DMKDHPubI@dpg-d4ud120gjchc73c6mr6g-a/store_db_iqbp
 JWT_SECRET_KEY=[pegar resultado de openssl aquí]
 MAIL_USERNAME=tu_email@gmail.com
 MAIL_PASSWORD=[pegar Gmail App Password aquí]
