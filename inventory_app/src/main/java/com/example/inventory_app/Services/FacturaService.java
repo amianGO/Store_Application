@@ -1,6 +1,7 @@
 package com.example.inventory_app.Services;
 
 import com.example.inventory_app.Entities.Factura;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -12,12 +13,6 @@ import java.util.Optional;
  * @version 1.0
  */
 public interface FacturaService {
-    
-    /**
-     * Obtiene todas las facturas.
-     * @return Lista de todas las facturas
-     */
-    List<Factura> findAll();
     
     /**
      * Crea una nueva factura.
@@ -41,6 +36,12 @@ public interface FacturaService {
     Optional<Factura> findByNumeroFactura(String numeroFactura);
     
     /**
+     * Obtiene todas las facturas.
+     * @return Lista de todas las facturas
+     */
+    List<Factura> findAll();
+    
+    /**
      * Obtiene las facturas de un cliente.
      * @param clienteId ID del cliente
      * @return Lista de facturas del cliente
@@ -55,19 +56,19 @@ public interface FacturaService {
     List<Factura> findByEmpleado(Long empleadoId);
     
     /**
+     * Obtiene facturas por estado.
+     * @param estado Estado de la factura
+     * @return Lista de facturas con el estado
+     */
+    List<Factura> findByEstado(String estado);
+    
+    /**
      * Obtiene facturas por rango de fechas.
      * @param fechaInicio Fecha inicial
      * @param fechaFin Fecha final
      * @return Lista de facturas en el rango
      */
     List<Factura> findByRangoFechas(Date fechaInicio, Date fechaFin);
-    
-    /**
-     * Obtiene facturas por estado.
-     * @param estado Estado de la factura
-     * @return Lista de facturas con el estado
-     */
-    List<Factura> findByEstado(String estado);
     
     /**
      * Calcula el total de ventas de un día.

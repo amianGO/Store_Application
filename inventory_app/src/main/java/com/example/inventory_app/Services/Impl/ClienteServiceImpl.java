@@ -3,7 +3,7 @@ package com.example.inventory_app.Services.Impl;
 import com.example.inventory_app.Entities.Cliente;
 import com.example.inventory_app.Repositories.ClienteRepository;
 import com.example.inventory_app.Services.ClienteService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,17 +18,14 @@ import java.util.Optional;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ClienteServiceImpl implements ClienteService {
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
 
     @Override
     public Cliente save(Cliente cliente) {
-        if (cliente.getId() == null) {
-            cliente.setEstadoActivo(true);
-            cliente.setFechaRegistro(new java.util.Date());
-        }
+        // @PrePersist se encarga de establecer createdAt, updatedAt y activo=true automáticamente
         return clienteRepository.save(cliente);
     }
 
@@ -46,27 +43,44 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Cliente> findByNombreOrApellido(String texto) {
-        return clienteRepository.findByNombreContainingIgnoreCaseOrApellidoContainingIgnoreCase(texto, texto);
+    public Optional<Cliente> findByEmail(String email) {
+        return clienteRepository.findByEmail(email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Cliente> findAll() {
+        return clienteRepository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Cliente> findAllActive() {
-        return clienteRepository.findByEstadoActivoTrue();
+        return clienteRepository.findByActivoTrue();
+    }
+
+    @Override
+    public void delete(Long id) {
+        clienteRepository.deleteById(id);
     }
 
     @Override
     public void deactivate(Long id) {
         clienteRepository.findById(id).ifPresent(cliente -> {
-            cliente.setEstadoActivo(false);
+            cliente.setActivo(false);
             clienteRepository.save(cliente);
         });
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByDocumento(String documento) {
-        return clienteRepository.existsByDocumento(documento);
+    public List<Cliente> buscarPorNombre(String busqueda) {
+        return clienteRepository.findByNombreContainingIgnoreCaseOrApellidoContainingIgnoreCase(busqueda, busqueda);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Cliente> findByCiudad(String ciudad) {
+        return clienteRepository.findByCiudad(ciudad);
     }
 }

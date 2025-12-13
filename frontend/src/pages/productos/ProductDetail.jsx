@@ -44,12 +44,28 @@ export default function ProductDetail() {
   const [error, setError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
+    // Verificar rol del usuario
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(payload.rol || '');
+      } catch (error) {
+        console.error('Error al decodificar token:', error);
+      }
+    }
+
     const fetchProducto = async () => {
       try {
         const response = await axiosInstance.get(`/productos/${id}`);
-        setProducto(response.data);
+        console.log('📦 Producto recibido:', response.data);
+        
+        // La API devuelve { success: true, producto: {...}, schemaName: 'empresa_X' }
+        const productoData = response.data?.producto || response.data;
+        setProducto(productoData);
       } catch (error) {
         setError('Error al cargar el producto');
         console.error('Error:', error);
@@ -196,53 +212,56 @@ export default function ProductDetail() {
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={<Edit size={20} />}
-                onClick={() => navigate(`/productos/edit/${producto.id}`)}
-                sx={{
-                  background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1.5,
-                  boxShadow: '0 4px 20px rgba(147, 112, 219, 0.4)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #a280e0 0%, #7b6bd4 100%)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 6px 28px rgba(147, 112, 219, 0.6)',
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Editar Producto
-              </Button>
+            {/* Botones de acción - Solo para ADMIN */}
+            {userRole === 'ADMIN' && (
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<Edit size={20} />}
+                  onClick={() => navigate(`/productos/edit/${producto.id}`)}
+                  sx={{
+                    background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.5,
+                    boxShadow: '0 4px 20px rgba(147, 112, 219, 0.4)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #a280e0 0%, #7b6bd4 100%)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 28px rgba(147, 112, 219, 0.6)',
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Editar Producto
+                </Button>
 
-              <Button
-                variant="outlined"
-                startIcon={<Trash2 size={20} />}
-                onClick={() => setDeleteDialogOpen(true)}
-                sx={{
-                  borderColor: 'rgba(244, 67, 54, 0.5)',
-                  color: '#ffcdd2',
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1.5,
-                  '&:hover': {
-                    borderColor: '#f44336',
-                    background: 'rgba(244, 67, 54, 0.1)',
-                    transform: 'translateY(-2px)',
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Eliminar
-              </Button>
-            </Box>
+                <Button
+                  variant="outlined"
+                  startIcon={<Trash2 size={20} />}
+                  onClick={() => setDeleteDialogOpen(true)}
+                  sx={{
+                    borderColor: 'rgba(244, 67, 54, 0.5)',
+                    color: '#ffcdd2',
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.5,
+                    '&:hover': {
+                      borderColor: '#f44336',
+                      background: 'rgba(244, 67, 54, 0.1)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Eliminar
+                </Button>
+              </Box>
+            )}
           </Box>
         </Box>
 
@@ -268,14 +287,14 @@ export default function ProductDetail() {
                     Información General
                   </Typography>
                   <Chip
-                    label={producto.estadoActivo ? 'Activo' : 'Inactivo'}
+                    label={producto.activo ? 'Activo' : 'Inactivo'}
                     sx={{
-                      background: producto.estadoActivo 
+                      background: producto.activo 
                         ? 'rgba(76, 175, 80, 0.2)' 
                         : 'rgba(244, 67, 54, 0.2)',
-                      color: producto.estadoActivo ? '#81c784' : '#e57373',
+                      color: producto.activo ? '#81c784' : '#e57373',
                       fontWeight: 600,
-                      border: `1px solid ${producto.estadoActivo ? 'rgba(76, 175, 80, 0.3)' : 'rgba(244, 67, 54, 0.3)'}`
+                      border: `1px solid ${producto.activo ? 'rgba(76, 175, 80, 0.3)' : 'rgba(244, 67, 54, 0.3)'}`
                     }}
                   />
                 </Box>

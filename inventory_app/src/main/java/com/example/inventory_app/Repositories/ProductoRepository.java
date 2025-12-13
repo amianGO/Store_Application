@@ -5,6 +5,7 @@ import com.example.inventory_app.Entities.CategoriaProducto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -34,26 +35,32 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findByCategoria(CategoriaProducto categoria);
     
     /**
-     * Busca productos con stock menor al mínimo establecido.
-     * @return Lista de productos con bajo stock
+     * Busca todos los productos activos.
+     * @return Lista de productos activos
      */
-    @Query("SELECT p FROM Producto p WHERE p.stock <= p.stockMinimo AND p.estadoActivo = true")
-    List<Producto> findProductosConBajoStock();
+    List<Producto> findByActivoTrue();
     
     /**
-     * Busca productos por rango de precios.
+     * Busca productos con stock menor al mínimo establecido y activos.
+     * @param stockMinimo Stock mínimo
+     * @return Lista de productos con bajo stock y activos
+     */
+    List<Producto> findByStockLessThanAndActivoTrue(int stockMinimo);
+    
+    /**
+     * Busca productos por rango de precios y activos.
      * @param precioMin Precio mínimo
      * @param precioMax Precio máximo
-     * @return Lista de productos dentro del rango de precios
+     * @return Lista de productos dentro del rango de precios y activos
      */
-    List<Producto> findByPrecioVentaBetweenAndEstadoActivoTrue(BigDecimal precioMin, BigDecimal precioMax);
+    List<Producto> findByPrecioVentaBetweenAndActivoTrue(BigDecimal precioMin, BigDecimal precioMax);
     
     /**
-     * Busca productos por nombre que contengan el texto proporcionado.
+     * Busca productos por nombre que contengan el texto proporcionado e activos.
      * @param nombre Texto a buscar en el nombre
-     * @return Lista de productos que coinciden con la búsqueda
+     * @return Lista de productos que coinciden con la búsqueda y son activos
      */
-    List<Producto> findByNombreContainingIgnoreCaseAndEstadoActivoTrue(String nombre);
+    List<Producto> findByNombreContainingIgnoreCaseAndActivoTrue(String nombre);
     
     /**
      * Verifica si existe un producto con el código proporcionado.
@@ -61,4 +68,11 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
      * @return true si existe, false si no
      */
     boolean existsByCodigo(String codigo);
+    
+    /**
+     * Busca productos con stock menor al mínimo establecido.
+     * @return Lista de productos con bajo stock
+     */
+    @Query("SELECT p FROM Producto p WHERE p.stock < p.stockMinimo AND p.activo = true")
+    List<Producto> findProductosConBajoStock();
 }

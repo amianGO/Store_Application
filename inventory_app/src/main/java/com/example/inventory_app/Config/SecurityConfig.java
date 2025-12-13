@@ -3,6 +3,9 @@ package com.example.inventory_app.Config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,19 +33,24 @@ import java.util.Arrays;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) // ✅ Habilitar @PreAuthorize
 public class SecurityConfig {
 
     @Autowired
     private JwtService jwtService;
 
     /**
-     * Configura el decodificador JWT
+     * Configura el decodificador JWT con HS256
      */
     @Bean
     public JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withSecretKey(Keys.hmacShaKeyFor(
-            Base64.getDecoder().decode(jwtService.getSecretKey())
-        )).build();
+        byte[] keyBytes = Base64.getDecoder().decode(jwtService.getSecretKey());
+        javax.crypto.SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes);
+        
+        return NimbusJwtDecoder
+                .withSecretKey(secretKey)
+                .macAlgorithm(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256)
+                .build();
     }
 
     /**
@@ -54,11 +62,24 @@ public class SecurityConfig {
             new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter();
         
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            java.util.List<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
+            
+            // Para empleados: leer el claim "rol"
             String rol = jwt.getClaimAsString("rol");
             if (rol != null) {
-                return java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + rol));
+                authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + rol));
+                System.out.println("✅ Authority agregada desde claim 'rol': ROLE_" + rol);
             }
-            return java.util.List.of();
+            
+            // Para empresas: leer el claim "tipo"
+            String tipo = jwt.getClaimAsString("tipo");
+            if (tipo != null && tipo.equals("empresa_login")) {
+                authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPRESA"));
+                System.out.println("✅ Authority agregada desde claim 'tipo': ROLE_EMPRESA");
+            }
+            
+            System.out.println("🔐 Total authorities: " + authorities);
+            return authorities;
         });
         
         return converter;
@@ -94,6 +115,15 @@ public class SecurityConfig {
      * Configura la cadena de filtros de seguridad.
      * Define las reglas de seguridad para las diferentes rutas de la aplicación.
      * 
+     * Rutas públicas (NO requieren JWT):
+     * - /api/auth/login - Login de empleados
+     * - /api/auth/register - Registro de empleados
+     * - /api/auth/empresa/registro - Registro de empresas (Multi-Tenant)
+     * - /api/auth/empresa/login - Login de empresas
+     * - /api/auth/empresa/{id}/verificar - Verificación de email
+     * - /api/productos/publico/** - Consultas públicas de productos
+     * - /api/suscripciones/planes - Listar planes (NUEVO)
+     * 
      * @param http Configuración de seguridad HTTP
      * @return SecurityFilterChain
      * @throws Exception si hay un error en la configuración
@@ -104,11 +134,24 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF para APIs
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Solo los endpoints de autenticación son públicos
-                .requestMatchers("/api/productos/publico/**").permitAll() // Solo consultas públicas de productos
-                .requestMatchers("/api/empleados").authenticated() // Permitir GET a empleados a usuarios autenticados
-                .requestMatchers("/api/empleados/**").hasRole("ADMIN") // Otros endpoints de empleados requieren ADMIN
+                // Rutas públicas de autenticación (NO requieren JWT)
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register").permitAll()
+                .requestMatchers("/api/auth/empresa/registro").permitAll()
+                .requestMatchers("/api/auth/empresa/login").permitAll()
+                .requestMatchers("/api/auth/empresa/*/verificar").permitAll()
+                .requestMatchers("/api/auth/empresa/*/tiene-empleados").permitAll() // Verificar empleados (público)
+                .requestMatchers("/api/productos/publico/**").permitAll()
+                .requestMatchers("/api/suscripciones/planes").permitAll() // Nuevo endpoint público
+                .requestMatchers("/api/auth/verificar-email").permitAll() // Verificación de email
+                .requestMatchers("/api/auth/reenviar-verificacion").permitAll() // Reenviar verificación
+                
+                // Rutas protegidas por roles
+                .requestMatchers("/api/empleados").authenticated()
+                .requestMatchers("/api/empleados/**").hasRole("ADMIN")
                 .requestMatchers("/api/estadisticas/**").hasAnyRole("ADMIN", "GERENTE")
+                
+                // Todas las demás rutas requieren autenticación
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

@@ -36,10 +36,13 @@ const categorias = [
   'ROPA',
   'HOGAR',
   'DEPORTES',
-  'LIBROS',
   'JUGUETES',
-  'BELLEZA',
+  'FERRETERIA',
   'ALIMENTOS',
+  'BEBIDAS',
+  'PAPELERIA',
+  'CALZADO',
+  'LIMPIEZA',
   'OTROS'
 ];
 
@@ -56,19 +59,46 @@ export default function EditProduct() {
     stock: '',
     stockMinimo: '',
     categoria: '',
-    estadoActivo: true
+    activo: true
   });
   const [loading, setLoading] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [userRole, setUserRole] = useState('');
 
   // Cargar datos del producto
   useEffect(() => {
+    // Verificar permisos
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const rol = payload.rol || '';
+        setUserRole(rol);
+        
+        // Si no es ADMIN, redirigir
+        if (rol !== 'ADMIN') {
+          setError('No tienes permisos para editar productos. Solo usuarios ADMIN pueden editar productos.');
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 3000);
+          return;
+        }
+      } catch (error) {
+        console.error('Error al decodificar token:', error);
+        navigate('/login-empleado');
+        return;
+      }
+    }
+
     const fetchProduct = async () => {
       try {
         const response = await axiosInstance.get(`/productos/${id}`);
-        const producto = response.data;
+        console.log('📦 Producto recibido para editar:', response.data);
+        
+        // La API devuelve { success: true, producto: {...}, schemaName: 'empresa_X' }
+        const producto = response.data?.producto || response.data;
         
         setFormData({
           codigo: producto.codigo || '',
@@ -79,7 +109,7 @@ export default function EditProduct() {
           stock: producto.stock?.toString() || '',
           stockMinimo: producto.stockMinimo?.toString() || '',
           categoria: producto.categoria || '',
-          estadoActivo: producto.estadoActivo !== undefined ? producto.estadoActivo : true
+          activo: producto.activo !== undefined ? producto.activo : true
         });
       } catch (err) {
         setError('Error al cargar el producto');
@@ -92,7 +122,7 @@ export default function EditProduct() {
     if (id) {
       fetchProduct();
     }
-  }, [id]);
+  }, [id, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -706,14 +736,14 @@ export default function EditProduct() {
                           Estado del Producto
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                          {formData.estadoActivo ? 'El producto está activo y visible' : 'El producto está inactivo y oculto'}
+                          {formData.activo ? 'El producto está activo y visible' : 'El producto está inactivo y oculto'}
                         </Typography>
                       </Box>
                       <FormControlLabel
                         control={
                           <Switch
-                            checked={formData.estadoActivo}
-                            onChange={(e) => setFormData(prev => ({ ...prev, estadoActivo: e.target.checked }))}
+                            checked={formData.activo}
+                            onChange={(e) => setFormData(prev => ({ ...prev, activo: e.target.checked }))}
                             sx={{
                               '& .MuiSwitch-switchBase.Mui-checked': {
                                 color: '#4caf50',

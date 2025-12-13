@@ -43,6 +43,37 @@ public interface ProductoService {
     List<Producto> findByCategoria(CategoriaProducto categoria);
     
     /**
+     * Obtiene todos los productos.
+     * @return Lista de todos los productos
+     */
+    List<Producto> findAll();
+    
+    /**
+     * Obtiene todos los productos activos.
+     * @return Lista de productos activos
+     */
+    List<Producto> findAllActive();
+    
+    /**
+     * Elimina un producto físicamente.
+     * @param id ID del producto a eliminar
+     */
+    void delete(Long id);
+    
+    /**
+     * Desactiva un producto, impidiendo que esté disponible sin eliminarlo.
+     * @param id ID del producto a desactivar
+     */
+    void deactivate(Long id);
+    
+    /**
+     * Busca productos por nombre.
+     * @param nombre Nombre a buscar
+     * @return Lista de productos que coinciden
+     */
+    List<Producto> findByNombre(String nombre);
+    
+    /**
      * Obtiene productos con stock bajo.
      * @return Lista de productos con stock bajo
      */
@@ -63,23 +94,4 @@ public interface ProductoService {
      * @return Producto actualizado
      */
     Producto actualizarStock(Long id, int cantidad);
-    
-    /**
-     * Elimina un producto físicamente.
-     * @param id ID del producto a eliminar
-     */
-    void delete(Long id);
-    
-    /**
-     * Busca productos por nombre.
-     * @param nombre Nombre a buscar
-     * @return Lista de productos que coinciden
-     */
-    List<Producto> findByNombre(String nombre);
-    
-    /**
-     * Obtiene todos los productos.
-     * @return Lista de todos los productos
-     */
-    List<Producto> findAll();
 }

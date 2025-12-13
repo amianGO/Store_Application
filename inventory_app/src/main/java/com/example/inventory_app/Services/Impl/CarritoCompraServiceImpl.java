@@ -1,96 +1,114 @@
 package com.example.inventory_app.Services.Impl;
 
 import com.example.inventory_app.Entities.CarritoCompra;
+import com.example.inventory_app.Entities.Producto;
 import com.example.inventory_app.Repositories.CarritoCompraRepository;
+import com.example.inventory_app.Repositories.ProductoRepository;
 import com.example.inventory_app.Services.CarritoCompraService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implementación de los servicios de CarritoCompra.
- *
- * @author DamianG
- * @version 1.0
- */
 @Service
 @Transactional
 public class CarritoCompraServiceImpl implements CarritoCompraService {
 
     @Autowired
-    private CarritoCompraRepository carritoCompraRepository;
+    private CarritoCompraRepository carritoRepository;
+    
+    @Autowired
+    private ProductoRepository productoRepository;
 
     @Override
-    public CarritoCompra create(CarritoCompra carritoCompra) {
-        carritoCompra.setFechaCreacion(new Date());
-        carritoCompra.setEstado("ACTIVO");
-        carritoCompra.setTotalEstimado(BigDecimal.ZERO);
-        return carritoCompraRepository.save(carritoCompra);
+    public CarritoCompra agregarProducto(Long empleadoId, Long productoId, Integer cantidad) {
+        Producto producto = productoRepository.findById(productoId)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        
+        if (!producto.isActivo()) {
+            throw new RuntimeException("El producto no está disponible");
+        }
+        
+        if (producto.getStock() < cantidad) {
+            throw new RuntimeException("Stock insuficiente. Disponible: " + producto.getStock());
+        }
+
+        Optional<CarritoCompra> itemExistente = carritoRepository
+            .findByEmpleadoIdAndProductoId(empleadoId, productoId);
+        
+        if (itemExistente.isPresent()) {
+            CarritoCompra item = itemExistente.get();
+            int nuevaCantidad = item.getCantidad() + cantidad;
+            
+            if (producto.getStock() < nuevaCantidad) {
+                throw new RuntimeException("Stock insuficiente. Disponible: " + producto.getStock());
+            }
+            
+            item.setCantidad(nuevaCantidad);
+            return carritoRepository.save(item);
+        } else {
+            CarritoCompra nuevoItem = new CarritoCompra();
+            nuevoItem.setEmpleadoId(empleadoId);
+            nuevoItem.setProductoId(productoId);
+            nuevoItem.setCantidad(cantidad);
+            nuevoItem.setPrecioUnitario(producto.getPrecioVenta());
+            return carritoRepository.save(nuevoItem);
+        }
+    }
+
+    @Override
+    public CarritoCompra actualizarCantidad(Long id, Integer cantidad) {
+        CarritoCompra item = carritoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Item del carrito no encontrado"));
+        
+        Producto producto = productoRepository.findById(item.getProductoId())
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        
+        if (producto.getStock() < cantidad) {
+            throw new RuntimeException("Stock insuficiente. Disponible: " + producto.getStock());
+        }
+        
+        item.setCantidad(cantidad);
+        return carritoRepository.save(item);
+    }
+
+    @Override
+    public void eliminarItem(Long id) {
+        carritoRepository.deleteById(id);
+    }
+
+    @Override
+    public void vaciarCarrito(Long empleadoId) {
+        carritoRepository.deleteByEmpleadoId(empleadoId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CarritoCompra> obtenerCarritoPorEmpleado(Long empleadoId) {
+        return carritoRepository.findByEmpleadoId(empleadoId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<CarritoCompra> findById(Long id) {
-        return carritoCompraRepository.findById(id);
+        return carritoRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CarritoCompra> findByCliente(Long clienteId) {
-        return carritoCompraRepository.findByClienteId(clienteId);
+    public BigDecimal calcularTotalCarrito(Long empleadoId) {
+        List<CarritoCompra> items = carritoRepository.findByEmpleadoId(empleadoId);
+        return items.stream()
+            .map(CarritoCompra::getSubtotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CarritoCompra> findByEmpleado(Long empleadoId) {
-        return carritoCompraRepository.findByEmpleadoId(empleadoId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<CarritoCompra> findCarritoActivo(Long clienteId) {
-        return carritoCompraRepository.findByClienteIdAndEstado(clienteId, "ACTIVO");
-    }
-
-    @Override
-    public CarritoCompra actualizarTotal(Long id) {
-        return carritoCompraRepository.findById(id).map(carrito -> {
-            BigDecimal total = carrito.getItems().stream()
-                .map(item -> item.getPrecioUnitario().multiply(new BigDecimal(item.getCantidad())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-            
-            carrito.setTotalEstimado(total);
-            return carritoCompraRepository.save(carrito);
-        }).orElseThrow(() -> new RuntimeException("Carrito no encontrado"));
-    }
-
-    @Override
-    public void vaciarCarrito(Long id) {
-        carritoCompraRepository.findById(id).ifPresent(carrito -> {
-            carrito.getItems().clear();
-            carrito.setTotalEstimado(BigDecimal.ZERO);
-            carritoCompraRepository.save(carrito);
-        });
-    }
-
-    @Override
-    public void completarCarrito(Long id) {
-        carritoCompraRepository.findById(id).ifPresent(carrito -> {
-            carrito.setEstado("COMPLETADO");
-            carritoCompraRepository.save(carrito);
-        });
-    }
-
-    @Override
-    public Long eliminarCarritosAbandonados(int horasInactivo) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.HOUR, -horasInactivo);
-        return carritoCompraRepository.deleteByFechaCreacionBeforeAndEstado(cal.getTime(), "ACTIVO");
+    public Long contarItems(Long empleadoId) {
+        return carritoRepository.countByEmpleadoId(empleadoId);
     }
 }

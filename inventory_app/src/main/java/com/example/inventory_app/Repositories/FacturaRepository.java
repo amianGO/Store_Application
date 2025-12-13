@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.time.LocalDateTime;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -42,14 +42,6 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     List<Factura> findByEmpleadoId(Long empleadoId);
     
     /**
-     * Busca facturas por rango de fechas.
-     * @param fechaInicio Fecha inicial
-     * @param fechaFin Fecha final
-     * @return Lista de facturas dentro del rango de fechas
-     */
-    List<Factura> findByFechaEmisionBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin);
-    
-    /**
      * Busca facturas por estado.
      * @param estado Estado de la factura
      * @return Lista de facturas con el estado especificado
@@ -57,10 +49,35 @@ public interface FacturaRepository extends JpaRepository<Factura, Long> {
     List<Factura> findByEstado(String estado);
     
     /**
+     * Busca facturas por rango de fechas.
+     * @param fechaInicio Fecha inicial
+     * @param fechaFin Fecha final
+     * @return Lista de facturas dentro del rango de fechas
+     */
+    List<Factura> findByFechaBetween(Date fechaInicio, Date fechaFin);
+    
+    /**
+     * Busca facturas por rango de fechas utilizando una consulta personalizada.
+     * @param fechaInicio Fecha inicial
+     * @param fechaFin Fecha final
+     * @return Lista de facturas dentro del rango de fechas
+     */
+    @Query("SELECT f FROM Factura f WHERE f.fecha >= :fechaInicio AND f.fecha < :fechaFin")
+    List<Factura> findByRangoFechas(@Param("fechaInicio") Date fechaInicio, @Param("fechaFin") Date fechaFin);
+    
+    /**
      * Calcula el total de ventas por día.
      * @param fecha Fecha para calcular el total
      * @return Total de ventas del día
      */
-    @Query("SELECT SUM(f.total) FROM Factura f WHERE DATE(f.fechaEmision) = DATE(:fecha) AND f.estado = 'COMPLETADA'")
-    Optional<Double> calcularTotalVentasPorDia(@Param("fecha") Date fecha);
+    @Query("SELECT SUM(f.total) FROM Factura f WHERE DATE(f.fecha) = DATE(:fecha) AND f.estado = 'COMPLETADA'")
+    Double calcularTotalVentasDia(@Param("fecha") Date fecha);
+    
+    /**
+     * Busca las facturas completadas por un cliente en orden descendente por fecha.
+     * @param clienteId ID del cliente
+     * @return Lista de facturas completadas por el cliente
+     */
+    @Query("SELECT f FROM Factura f WHERE f.clienteId = :clienteId AND f.estado = 'COMPLETADA' ORDER BY f.fecha DESC")
+    List<Factura> findFacturasCompletadasPorCliente(@Param("clienteId") Long clienteId);
 }

@@ -66,4 +66,8 @@ public interface EmpleadoService {
      * @return Optional con el empleado si las credenciales son válidas
      */
     Optional<Empleado> verificarCredenciales(String usuario, String password);
+    
+    boolean empresaTieneEmpleados(Long empresaId, String schemaName);
+    
+    long contarEmpleados(Long empresaId, String schemaName);
 }

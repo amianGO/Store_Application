@@ -1,77 +1,54 @@
 package com.example.inventory_app.Services.Impl;
 
+import com.example.inventory_app.Entities.DetalleFactura;
 import com.example.inventory_app.Entities.Factura;
 import com.example.inventory_app.Repositories.FacturaRepository;
-import com.example.inventory_app.Repositories.DetalleFacturaRepository;
 import com.example.inventory_app.Services.FacturaService;
 import com.example.inventory_app.Services.ProductoService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implementación de los servicios de Factura.
- *
- * @author DamianG
- * @version 1.0
- */
 @Service
 @Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class FacturaServiceImpl implements FacturaService {
 
-    @Autowired
-    private FacturaRepository facturaRepository;
-
-    @Autowired
-    private DetalleFacturaRepository detalleFacturaRepository;
-
-    @Autowired
-    private ProductoService productoService;
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Factura> findAll() {
-        List<Factura> facturas = facturaRepository.findAll();
-        // Cargar detalles para cada factura
-        facturas.forEach(factura -> {
-            factura.setDetalles(detalleFacturaRepository.findByFacturaId(factura.getId()));
-        });
-        return facturas;
-    }
+    private final FacturaRepository facturaRepository;
+    private final ProductoService productoService;
 
     @Override
     public Factura create(Factura factura) {
-        factura.setFechaEmision(LocalDateTime.now());
-        factura.setEstado("COMPLETADA");
+        log.info("Creando factura con {} detalles", factura.getDetalles().size());
         
-        // Calcular totales antes de guardar
+        // CRÍTICO: Calcular subtotales de cada detalle primero
+        factura.getDetalles().forEach(DetalleFactura::calcularSubtotal);
+        
+        // Luego calcular totales de la factura
         factura.calcularTotales();
         
-        // Guardar primero la factura para obtener el ID
+        log.info("Subtotal: {}, Total: {}", factura.getSubtotal(), factura.getTotal());
+        
+        // Guardar factura (cascade guardará los detalles automáticamente)
         Factura facturaGuardada = facturaRepository.save(factura);
         
-        // Guardar los detalles con el ID de la factura
+        // Actualizar stock de productos
         factura.getDetalles().forEach(detalle -> {
-            detalle.setFacturaId(facturaGuardada.getId());
-            detalleFacturaRepository.save(detalle);
-            
-            // Actualizar stock de productos usando el código del producto
-            productoService.findByCodigo(detalle.getProductoCodigo())
-                .ifPresent(producto -> {
-                    productoService.actualizarStock(
-                        producto.getId(),
-                        -detalle.getCantidad()
-                    );
-                });
+            try {
+                productoService.actualizarStock(detalle.getProductoId(), -detalle.getCantidad());
+                log.info("Stock actualizado para producto ID: {}, cantidad: -{}", 
+                    detalle.getProductoId(), detalle.getCantidad());
+            } catch (Exception e) {
+                log.error("Error al actualizar stock del producto {}: {}", 
+                    detalle.getProductoId(), e.getMessage());
+            }
         });
-        
-        // Cargar los detalles en la factura guardada
-        facturaGuardada.setDetalles(detalleFacturaRepository.findByFacturaId(facturaGuardada.getId()));
         
         return facturaGuardada;
     }
@@ -79,21 +56,19 @@ public class FacturaServiceImpl implements FacturaService {
     @Override
     @Transactional(readOnly = true)
     public Optional<Factura> findById(Long id) {
-        if (id == null) {
-            return Optional.empty();
-        }
-        Optional<Factura> facturaOpt = facturaRepository.findById(id);
-        if (facturaOpt.isPresent()) {
-            Factura factura = facturaOpt.get();
-            factura.setDetalles(detalleFacturaRepository.findByFacturaId(factura.getId()));
-        }
-        return facturaOpt;
+        return facturaRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Factura> findByNumeroFactura(String numeroFactura) {
         return facturaRepository.findByNumeroFactura(numeroFactura);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Factura> findAll() {
+        return facturaRepository.findAll();
     }
 
     @Override
@@ -110,57 +85,45 @@ public class FacturaServiceImpl implements FacturaService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Factura> findByRangoFechas(Date fechaInicio, Date fechaFin) {
-        LocalDateTime inicio = fechaInicio.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-        LocalDateTime fin = fechaFin.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-        return facturaRepository.findByFechaEmisionBetween(inicio, fin);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<Factura> findByEstado(String estado) {
         return facturaRepository.findByEstado(estado);
     }
 
     @Override
     @Transactional(readOnly = true)
+    public List<Factura> findByRangoFechas(Date fechaInicio, Date fechaFin) {
+        return facturaRepository.findByRangoFechas(fechaInicio, fechaFin);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Double calcularTotalVentasDia(Date fecha) {
-        return facturaRepository.calcularTotalVentasPorDia(fecha)
-            .orElse(0.0);
+        Double total = facturaRepository.calcularTotalVentasDia(fecha);
+        return total != null ? total : 0.0;
     }
 
     @Override
     public void anularFactura(Long id) {
-        if (id == null) {
-            return;
-        }
         facturaRepository.findById(id).ifPresent(factura -> {
-            if ("COMPLETADA".equals(factura.getEstado())) {
-                // Restaurar stock de productos usando el código del producto
-                factura.getDetalles().forEach(detalle -> {
-                    productoService.findByCodigo(detalle.getProductoCodigo())
-                        .ifPresent(producto -> {
-                            productoService.actualizarStock(
-                                producto.getId(),
-                                detalle.getCantidad()
-                            );
-                        });
-                });
-                
-                factura.setEstado("ANULADA");
-                facturaRepository.save(factura);
-            }
+            factura.setEstado("ANULADA");
+            facturaRepository.save(factura);
+            
+            // Devolver stock a los productos
+            factura.getDetalles().forEach(detalle -> {
+                try {
+                    productoService.actualizarStock(detalle.getProductoId(), detalle.getCantidad());
+                    log.info("Stock devuelto para producto ID: {}, cantidad: +{}", 
+                        detalle.getProductoId(), detalle.getCantidad());
+                } catch (Exception e) {
+                    log.error("Error al devolver stock del producto {}: {}", 
+                        detalle.getProductoId(), e.getMessage());
+                }
+            });
         });
     }
-    
+
     @Override
-    @Transactional
     public void delete(Long id) {
-        if (id != null && facturaRepository.existsById(id)) {
-            // Eliminar primero los detalles
-            detalleFacturaRepository.deleteByFacturaId(id);
-            // Luego eliminar la factura
-            facturaRepository.deleteById(id);
-        }
+        facturaRepository.deleteById(id);
     }
 }

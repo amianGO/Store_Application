@@ -1,11 +1,15 @@
 package com.example.inventory_app.Entities;
 
+import com.example.inventory_app.Entities.CategoriaProducto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * Entidad que representa un producto en el sistema.
@@ -19,34 +23,31 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Producto {
+public class Producto implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El código es obligatorio")
-    @Size(max = 50, message = "El código no puede exceder 50 caracteres")
-    @Column(nullable = false, unique = true, length = 50)
+    @NotBlank(message = "El código del producto es obligatorio")
+    @Column(unique = true, nullable = false, length = 50)
     private String codigo;
 
-    @NotBlank(message = "El nombre es obligatorio")
-    @Size(max = 100, message = "El nombre no puede exceder 100 caracteres")
-    @Column(nullable = false, length = 100)
+    @NotBlank(message = "El nombre del producto es obligatorio")
+    @Column(nullable = false, length = 200)
     private String nombre;
 
-    @Size(max = 500, message = "La descripción no puede exceder 500 caracteres")
-    @Column(length = 500)
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
 
     @NotNull(message = "El precio de compra es obligatorio")
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio de compra debe ser mayor a 0")
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "precio_compra", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioCompra;
 
     @NotNull(message = "El precio de venta es obligatorio")
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio de venta debe ser mayor a 0")
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "precio_venta", nullable = false, precision = 10, scale = 2)
     private BigDecimal precioVenta;
 
     @NotNull(message = "El stock es obligatorio")
@@ -54,18 +55,51 @@ public class Producto {
     @Column(nullable = false)
     private Integer stock;
 
+    @NotNull(message = "El stock mínimo es obligatorio")
     @Min(value = 0, message = "El stock mínimo no puede ser negativo")
-    @Column(name = "stock_minimo")
+    @Column(name = "stock_minimo", nullable = false)
     private Integer stockMinimo;
 
-    @Column(name = "fecha_registro")
-    @Temporal(TemporalType.TIMESTAMP)
-    private java.util.Date fechaRegistro;
-
-    @Column(name = "estado_activo")
-    private boolean estadoActivo = true;
-
+    @NotNull(message = "La categoría es obligatoria")
     @Enumerated(EnumType.STRING)
-    @Column(name = "categoria", nullable = false)
+    @Column(nullable = false, length = 50)
     private CategoriaProducto categoria;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;
+
+    @Column(name = "updated_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date updatedAt;
+
+    @Column(name = "activo", nullable = false)
+    private boolean activo = true;
+
+    /**
+     * Se ejecuta automáticamente antes de persistir (INSERT).
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+        this.activo = true; // Siempre activo al crear
+    }
+
+    /**
+     * Se ejecuta automáticamente antes de actualizar (UPDATE).
+     */
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = new Date();
+    }
+
+    // Getters y setters personalizados si Lombok no los genera correctamente
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
 }

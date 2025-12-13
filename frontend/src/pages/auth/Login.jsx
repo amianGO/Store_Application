@@ -1,338 +1,445 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import axiosInstance from "../../config/axios";
-
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-    Box,
-    Button,
-    TextField,
-    Typography,
-    Container,
-    Alert,
-    CircularProgress
+  Box,
+  Container,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+  Divider
 } from '@mui/material';
+import {
+  Person as PersonIcon,
+  Lock as LockIcon,
+  Business as BusinessIcon,
+  Visibility,
+  VisibilityOff,
+  ArrowBack
+} from '@mui/icons-material';
+import api from '../../config/axios';
+import { guardarDatosEmpleado } from '../../utils/authHelper';
 
-import {Lock, User} from 'lucide-react'
+export default function LoginEmpleado() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-export default function Login(){
-    const [usuario, setUsuario] = useState('')
-    const [password, setPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
-    const navigate = useNavigate()
+  // Obtener datos de la empresa desde localStorage o location.state
+  const empresaId = localStorage.getItem('empresaId') || location.state?.empresaId;
+  const empresaNombre = localStorage.getItem('empresaNombre') || location.state?.empresaNombre;
+  const tenantKey = localStorage.getItem('tenantKey') || location.state?.tenantKey;
+  const mensaje = location.state?.mensaje;
 
+  const [formData, setFormData] = useState({
+    usuario: '',
+    password: '',
+    tenantKey: tenantKey || ''
+  });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setError('')
-        setLoading(true)
-    
-        try {
-            const response = await axiosInstance.post('/auth/login', {usuario, password})
-            const { token, empleadoId, usuario: user, rol, nombre, apellido, cargo } = response.data
+  useEffect(() => {
+    // Si no hay tenantKey, redirigir al login de empresa
+    if (!tenantKey) {
+      console.warn('⚠️ No hay tenantKey. Redirigiendo a login de empresa...');
+      setError('No hay sesión de empresa activa. Serás redirigido...');
+      setTimeout(() => navigate('/login'), 3000);
+    }
+  }, [tenantKey, navigate]);
 
-            localStorage.setItem('token', token)
-            localStorage.setItem('empleadoId', empleadoId)
-            localStorage.setItem('usuario', user)
-            localStorage.setItem('rol', rol)
-            localStorage.setItem('nombre', nombre)
-            localStorage.setItem('apellido', apellido)
-            localStorage.setItem('cargo', cargo)
-            
-            navigate('/dashboard')
-        } catch (err){
-            setError(err.response?.data?.message || 'Credenciales Invalidas')
-        } finally {
-            setLoading(false)
-        }
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.usuario || !formData.password || !formData.tenantKey) {
+      setError('Por favor complete todos los campos');
+      return;
     }
 
-    return (
-        <Box
+    setLoading(true);
+
+    try {
+      console.log('📤 Intentando login de empleado...');
+      console.log('Datos a enviar:', {
+        usuario: formData.usuario,
+        password: '***',
+        tenantKey: formData.tenantKey
+      });
+
+      const response = await api.post('/auth/login', {
+        usuario: formData.usuario,
+        password: formData.password,
+        tenantKey: formData.tenantKey
+      });
+
+      console.log('✅ Respuesta completa del login:', response.data);
+
+      // La respuesta ya viene con todos los datos estructurados
+      const { token, empleadoId, usuario, rol, nombre, apellido, cargo } = response.data;
+
+      if (!token) {
+        console.error('❌ No se recibió token en la respuesta');
+        setError('Error: No se recibió token de autenticación');
+        return;
+      }
+
+      // Usar el helper para guardar TODOS los datos
+      guardarDatosEmpleado(response.data);
+
+      console.log('✅ Datos guardados correctamente');
+      console.log('✅ Redirigiendo al dashboard...');
+
+      // Redirigir al dashboard
+      navigate('/dashboard');
+
+    } catch (err) {
+      console.error('❌ Error en login de empleado:', err);
+
+      if (err.response?.data?.mensaje) {
+        setError(err.response.data.mensaje);
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError('Credenciales inválidas. Verifica tu usuario, contraseña y tenant key.');
+      } else if (err.response?.status === 404) {
+        setError('Empresa no encontrada. Verifica el tenant key.');
+      } else {
+        setError('Error al iniciar sesión. Por favor intente nuevamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVolver = () => {
+    navigate('/bienvenida-empresa');
+  };
+
+  const handleCerrarSesionEmpresa = () => {
+    // Limpiar TODOS los datos de localStorage
+    localStorage.clear();
+    
+    console.log('🚪 Sesión de empresa cerrada completamente');
+    
+    // Redirigir al login principal de empresas
+    navigate('/login', { 
+      state: { 
+        mensaje: 'Sesión cerrada exitosamente. Inicia sesión nuevamente.' 
+      } 
+    });
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: '#1e1e2f',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <Container maxWidth="sm">
+        {/* Botones superiores */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={handleVolver}
             sx={{
-                minHeight: '100vh',
-                width: '100vw',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-                padding: 2,
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                overflow: 'hidden',
-                '&::before':{
-                    content: '""',
-                    position: 'absolute',
-                    top: '-50%',
-                    right: '-50%',
-                    width: '100%',
-                    height: '100%',
-                    background: 'radial-gradient(circle, rgba(147, 112, 219, 0.15) 0%, transparent 70%)',
-                    animation: 'pulse 8s ease-in-out infinite'
-                },
-                '@keyframes pulse':{
-                    '0%, 100%': { transform: 'scale(1)', opacity: 0.5 },
-                    '50%': { transform: 'scale(1.1)', opacity: 0.3 },
-                },
+              color: 'rgba(255, 255, 255, 0.8)',
+              '&:hover': {
+                color: '#2196f3'
+              }
             }}
-        >
-            <Container maxWidth="sm">
-                <Box 
-                    sx={{
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        backdropFilter: 'blur(20px)',
-                        borderRadius: '24px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-                        padding: {xs: 3, sm: 5},
-                        position: 'relative',
-                        zIndex: 1,
-                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                        '&:hover':{
-                            transform: 'translateY(-5px)',
-                            boxShadow: '0 12px 48px rgba(147, 112, 219, 0.2)'
-                        },
-                    }}
-                >
-                    {/*Logo o Icono*/}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            mb: 3
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                width: 80,
-                                height: 80,
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 8px 24px rgba(147, 112, 219, 0.4)',
-                                animation: 'float 3s ease-in-out infinite',
-                                '@keyframes float': {
-                                    '0%, 100%': { transform: 'translateY(0px)' },
-                                    '50%': { transform: 'translateY(-10px)' },
-                                }
-                            }}
-                        >
-                            <Lock size={40} color="#fff"/>
-                        </Box>
-                    </Box>
+          >
+            Volver a Bienvenida
+          </Button>
 
-                    <Typography
-                        component="h1"
-                        variant="h4"
-                        sx={{
-                            mb: 1,
-                            textAlign: 'center',
-                            fontWeight: 700,
-                            background: 'linear-gradient(135deg, #dda0dd 0%, #9370db 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text'
-                        }}
-                    >
-                        Bienvenido
-                    </Typography>
-
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            mb: 4,
-                            textAlign: 'center',
-                            color: 'rgba(255, 255, 255, 0.6)'
-                        }}
-                    >
-                        Inicia Sesion para Continuar
-                    </Typography>
-                    {error && (
-                        <Alert
-                            severity="error"
-                            sx={{
-                                mb: 3,
-                                background: 'rgba(244, 67, 54, 0.1)',
-                                backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(244, 67, 54, 0.3)',
-                                color: '#ffcdd2'
-                            }}
-                        >
-                            {error}
-                        </Alert>
-                    )}
-                    <Box component="form" onSubmit={handleSubmit}>
-                        <Box sx={{position: 'relative', mb: 2}}>
-                            <User
-                                size={20}
-                                style={{
-                                    position: 'absolute',
-                                    left: 16,
-                                    top: 30,
-                                    color: 'rgba(255, 255, 255, 0.5)',
-                                    zIndex: 1,
-                                }}
-                            />
-                            <TextField 
-                                margin="normal"
-                                required
-                                fullWidth
-                                id="usuario"
-                                label="Usuario"
-                                name="usuario"
-                                value={usuario}
-                                onChange={(e) => setUsuario(e.target.value)}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                    paddingLeft: '48px',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: '12px',
-                                    transition: 'all 0.3s ease',
-                                    '& fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    },
-                                    '&:hover fieldset': {
-                                    borderColor: 'rgba(147, 112, 219, 0.5)',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                    borderColor: '#9370db',
-                                    borderWidth: '2px',
-                                    },
-                                    '&.Mui-focused': {
-                                    background: 'rgba(255, 255, 255, 0.08)',
-                                    },
-                                    },
-                                    '& .MuiInputLabel-root': {
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        marginLeft: '40px',
-                                    },
-                                    '& .MuiInputLabel-root.Mui-focused': {
-                                        color: '#dda0dd',
-                                        marginLeft: 0,
-                                    },
-                                    '& .MuiOutlinedInput-input': {
-                                        color: '#fff',
-                                    },
-                                }}
-                            />
-                        </Box>
-
-                        <Box sx={{position: 'relative', mb: 3}}>
-                            <Lock 
-                                size={20}
-                                style={{
-                                    position: 'absolute',
-                                    left: 16,
-                                    top: 30,
-                                    color: 'rgba(255, 255, 255, 0.5)',
-                                    zIndex: 1,
-                                }}
-                            />
-                            <TextField 
-                                margin="normal"
-                                required
-                                fullWidth
-                                id="password"
-                                label="Password"
-                                name="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                    paddingLeft: '48px',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: '12px',
-                                    transition: 'all 0.3s ease',
-                                    '& fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                    },
-                                    '&:hover fieldset': {
-                                    borderColor: 'rgba(147, 112, 219, 0.5)',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                    borderColor: '#9370db',
-                                    borderWidth: '2px',
-                                    },
-                                    '&.Mui-focused': {
-                                    background: 'rgba(255, 255, 255, 0.08)',
-                                    },
-                                    },
-                                    '& .MuiInputLabel-root': {
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        marginLeft: '40px',
-                                    },
-                                    '& .MuiInputLabel-root.Mui-focused': {
-                                        color: '#dda0dd',
-                                        marginLeft: 0,
-                                    },
-                                    '& .MuiOutlinedInput-input': {
-                                        color: '#fff',
-                                    },
-                                }}
-                            />
-                        </Box>
-
-                        <Button
-                            type="submit"
-                            fullWidth
-                            variant="contained"
-                            disabled={loading}
-                            sx={{
-                                mt: 2,
-                                mb: 3,
-                                py: 1.5,
-                                borderRadius: '12px',
-                                background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
-                                boxShadow: '0 4px 20px rgba(147, 112, 219, 0.4)',
-                                fontSize: '1rem',
-                                fontWeight: 600,
-                                textTransform: 'none',
-                                transition: 'all 0.3s ease',
-                                '&:hover':{
-                                    background: 'linear-gradient(135deg, #a280e0 0%, #7b6bd4 100%)',
-                                    boxShadow: '0 6px 28px rgba(147, 112, 219, 0.6)',
-                                    transform: 'translateY(-2px)'
-                                },
-                                '&:disabled':{
-                                    background: 'rgba(147, 112, 219, 0.3)'
-                                },
-                            }}
-                        >
-                            {loading ? (
-                                <CircularProgress size={24} sx={{ color: '#fff'}}/>
-                            ): (
-                                'Ingresar'
-                            )}
-                        </Button>
-
-                        <Box sx={{ textAlign: 'center'}}>
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    '& a': {
-                                        color: '#dda0dd',
-                                        textDecoration: 'none',
-                                        fontWeight: 600,
-                                        transition: 'color 0.3s ease',
-                                        '&:hover': {
-                                            color: '#9370db',
-                                            textDecoration: 'underline'
-                                        }
-                                    }
-                                }}
-                            >
-                                ¿No tienes Cuenta? <Link to="/register">Registrate</Link>
-                            </Typography>
-                        </Box>
-                    </Box>
-                </Box>
-            </Container>
+          <Button
+            variant="outlined"
+            onClick={handleCerrarSesionEmpresa}
+            sx={{
+              borderColor: 'rgba(244, 67, 54, 0.5)',
+              color: '#ef5350',
+              '&:hover': {
+                borderColor: '#ef5350',
+                background: 'rgba(244, 67, 54, 0.1)'
+              }
+            }}
+          >
+            Cerrar Sesión de Empresa
+          </Button>
         </Box>
 
-    )
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            background: 'rgba(30, 30, 47, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(147, 112, 219, 0.2)',
+            borderRadius: 2
+          }}
+        >
+          {/* Header */}
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <PersonIcon
+              sx={{
+                fontSize: 60,
+                color: '#2196f3',
+                mb: 2
+              }}
+            />
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 1
+              }}
+            >
+              Login de Empleado
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+            >
+              Accede con tus credenciales personales
+            </Typography>
+            {empresaNombre && (
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mt: 2,
+                  px: 2,
+                  py: 1,
+                  background: 'rgba(147, 112, 219, 0.1)',
+                  border: '1px solid rgba(147, 112, 219, 0.3)',
+                  borderRadius: 1
+                }}
+              >
+                <BusinessIcon sx={{ color: '#dda0dd', fontSize: 20 }} />
+                <Typography variant="body2" sx={{ color: '#dda0dd' }}>
+                  {empresaNombre}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Mensaje de éxito */}
+          {mensaje && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              {mensaje}
+            </Alert>
+          )}
+
+          {/* Alerta de error */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Formulario */}
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              required
+              label="Nombre de Usuario"
+              name="usuario"
+              value={formData.usuario}
+              onChange={handleChange}
+              margin="normal"
+              autoComplete="username"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: '#2196f3' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: 'white',
+                  '& fieldset': {
+                    borderColor: 'rgba(147, 112, 219, 0.3)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#2196f3'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#2196f3'
+                }
+              }}
+            />
+
+            <TextField
+              fullWidth
+              required
+              type={showPassword ? 'text' : 'password'}
+              label="Contraseña"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              margin="normal"
+              autoComplete="current-password"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon sx={{ color: '#2196f3' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      sx={{ color: 'rgba(255, 255, 255, 0.5)' }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: 'white',
+                  '& fieldset': {
+                    borderColor: 'rgba(147, 112, 219, 0.3)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#2196f3'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#2196f3'
+                }
+              }}
+            />
+
+            <TextField
+              fullWidth
+              required
+              label="Tenant Key"
+              name="tenantKey"
+              value={formData.tenantKey}
+              onChange={handleChange}
+              margin="normal"
+              helperText="Identificador único de tu empresa"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <BusinessIcon sx={{ color: '#9c27b0' }} />
+                  </InputAdornment>
+                ),
+                readOnly: !!tenantKey, // Solo lectura si viene del estado
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: 'white',
+                  '& fieldset': {
+                    borderColor: 'rgba(147, 112, 219, 0.3)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#2196f3'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#1976d2'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#2196f3'
+                },
+                '& .MuiFormHelperText-root': {
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }
+              }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={loading || !tenantKey}
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                background: 'linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 25px rgba(33, 150, 243, 0.4)'
+                },
+                '&:disabled': {
+                  background: 'rgba(33, 150, 243, 0.3)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {loading ? (
+                <CircularProgress size={24} sx={{ color: 'white' }} />
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </Button>
+          </form>
+
+          <Divider sx={{ my: 3, borderColor: 'rgba(147, 112, 219, 0.2)' }} />
+
+          {/* Nota informativa */}
+          <Box
+            sx={{
+              p: 2,
+              background: 'rgba(33, 150, 243, 0.1)',
+              border: '1px solid rgba(33, 150, 243, 0.2)',
+              borderRadius: 1
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+            >
+              ℹ️ <strong>¿No tienes usuario?</strong>
+              <br />
+              El administrador de tu empresa debe crear tu cuenta de empleado desde el sistema.
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+  );
 }

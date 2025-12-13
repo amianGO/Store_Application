@@ -3,6 +3,48 @@ import html2canvas from 'html2canvas';
 import { formatCOP } from './formatters';
 
 export const generateFacturaPDF = async (factura) => {
+  console.log('📄 Generando PDF con factura completa:', JSON.stringify(factura, null, 2));
+  
+  // Extraer y preparar datos con fallbacks
+  const numeroFactura = factura.numeroFactura || factura.numero || 'N/A';
+  const fechaEmision = factura.fechaEmision || factura.fecha;
+  const estado = factura.estado || 'COMPLETADA';
+  
+  // Cliente - Intentar obtener desde localStorage si no viene en la factura
+  let clienteNombre = 'Cliente no identificado';
+  if (factura.cliente) {
+    clienteNombre = `${factura.cliente.nombre} ${factura.cliente.apellido}`;
+  } else if (factura.clienteNombre) {
+    clienteNombre = factura.clienteNombre;
+  }
+  const clienteId = factura.clienteId || factura.cliente?.id || 'N/A';
+  
+  // Empleado - Obtener desde localStorage como fallback
+  let empleadoNombre = 'Empleado no identificado';
+  if (factura.empleado) {
+    empleadoNombre = `${factura.empleado.nombre} ${factura.empleado.apellido}`;
+  } else if (factura.empleadoNombre) {
+    empleadoNombre = factura.empleadoNombre;
+  } else {
+    // Fallback: obtener desde localStorage
+    const nombreDesdeStorage = localStorage.getItem('empleadoNombre');
+    if (nombreDesdeStorage) {
+      empleadoNombre = nombreDesdeStorage;
+    }
+  }
+  const empleadoId = factura.empleadoId || factura.empleado?.id || localStorage.getItem('empleadoId') || 'N/A';
+  
+  console.log('📊 Datos extraídos para PDF:', {
+    numeroFactura,
+    fechaEmision,
+    estado,
+    clienteNombre,
+    clienteId,
+    empleadoNombre,
+    empleadoId,
+    detalles: factura.detalles?.length || 0
+  });
+  
   // Crear elemento temporal para el PDF
   const pdfElement = document.createElement('div');
   pdfElement.style.position = 'absolute';
@@ -20,7 +62,7 @@ export const generateFacturaPDF = async (factura) => {
       <!-- Encabezado -->
       <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #4caf50; padding-bottom: 20px;">
         <h1 style="color: #4caf50; margin: 0; font-size: 36px; font-weight: bold;">FACTURA DE VENTA</h1>
-        <p style="margin: 10px 0 0 0; font-size: 16px; color: #666;">Sistema de Inventario</p>
+        <p style="margin: 10px 0 0 0; font-size: 16px; color: #666;">Adrian Gallego</p>
       </div>
 
       <!-- Información de la factura -->
@@ -28,17 +70,23 @@ export const generateFacturaPDF = async (factura) => {
         <div style="flex: 1;">
           <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">Información de la Factura</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <p style="margin: 5px 0;"><strong>Número:</strong> ${factura.numeroFactura}</p>
-            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${new Date(factura.fechaEmision).toLocaleString('es-CO')}</p>
-            <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: #4caf50; font-weight: bold;">${factura.estado}</span></p>
+            <p style="margin: 5px 0;"><strong>Número:</strong> ${numeroFactura}</p>
+            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${fechaEmision ? new Date(fechaEmision).toLocaleDateString('es-CO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            }) : 'N/A'}</p>
+            <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: #4caf50; font-weight: bold;">${estado}</span></p>
           </div>
         </div>
         
         <div style="flex: 1; margin-left: 30px;">
           <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">Información del Cliente</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <p style="margin: 5px 0;"><strong>Nombre:</strong> ${factura.clienteNombre}</p>
-            <p style="margin: 5px 0;"><strong>ID Cliente:</strong> ${factura.clienteId}</p>
+            <p style="margin: 5px 0;"><strong>Nombre:</strong> ${clienteNombre}</p>
+            <p style="margin: 5px 0;"><strong>ID Cliente:</strong> ${clienteId}</p>
           </div>
         </div>
       </div>
@@ -47,8 +95,8 @@ export const generateFacturaPDF = async (factura) => {
       <div style="margin-bottom: 30px;">
         <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">Atendido por</h3>
         <div style="background: #e3f2fd; padding: 15px; border-radius: 8px;">
-          <p style="margin: 5px 0;"><strong>Empleado:</strong> ${factura.empleadoNombre}</p>
-          <p style="margin: 5px 0;"><strong>ID Empleado:</strong> ${factura.empleadoId}</p>
+          <p style="margin: 5px 0;"><strong>Empleado:</strong> ${empleadoNombre}</p>
+          <p style="margin: 5px 0;"><strong>ID Empleado:</strong> ${empleadoId}</p>
         </div>
       </div>
 

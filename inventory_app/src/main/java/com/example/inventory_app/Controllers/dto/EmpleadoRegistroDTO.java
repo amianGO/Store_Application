@@ -31,7 +31,12 @@ public class EmpleadoRegistroDTO {
     
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=]).{6,}$",
+             message = "La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial (@#$%^&+=)")
     private String password;
+    
+    @NotBlank(message = "La confirmación de contraseña es obligatoria")
+    private String confirmPassword;
     
     @Size(max = 15, message = "El teléfono no puede exceder 15 caracteres")
     private String telefono;

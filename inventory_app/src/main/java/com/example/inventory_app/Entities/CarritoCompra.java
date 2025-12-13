@@ -1,63 +1,70 @@
 package com.example.inventory_app.Entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 /**
- * Entidad que representa el carrito de compras en el sistema.
- * Esta clase maneja la información temporal de los productos seleccionados antes de generar una factura.
- *
- * @author DamianG
- * @version 1.0
+ * Entidad CarritoCompra (schema: tenant).
+ * Carrito temporal de compras por empleado.
+ * Cada empresa gestiona sus propios carritos.
+ * 
+ * @author Sistema Multi-Tenant
+ * @version 2.0
  */
 @Entity
-@Table(name = "carritos")
+@Table(name = "carrito_compras", 
+       uniqueConstraints = @UniqueConstraint(columnNames = {"empleado_id", "producto_id"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarritoCompra {
+public class CarritoCompra implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "cliente_id")
-    private Cliente cliente;
+    @NotNull(message = "El empleado es obligatorio")
+    @Column(name = "empleado_id", nullable = false)
+    private Long empleadoId;
 
-    @ManyToOne
-    @JoinColumn(name = "empleado_id", nullable = false)
-    private Empleado empleado;
+    @NotNull(message = "El producto es obligatorio")
+    @Column(name = "producto_id", nullable = false)
+    private Long productoId;
 
-    @Column(name = "fecha_creacion")
+    @NotNull(message = "La cantidad es obligatoria")
+    @Min(value = 1, message = "La cantidad debe ser al menos 1")
+    @Column(nullable = false)
+    private Integer cantidad = 1;
+
+    @NotNull(message = "El precio unitario es obligatorio")
+    @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a 0")
+    @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
+    private BigDecimal precioUnitario;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    private java.util.Date fechaCreacion;
+    private Date createdAt;
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal totalEstimado;
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = new Date();
+    }
 
-    @Column(length = 20)
-    private String estado;
-
-    @OneToMany(mappedBy = "carritoCompra", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DetalleCarrito> items = new ArrayList<>();
-
-    public void addDetalle(DetalleCarrito detalle) {
-        if (items == null) {
-            items = new ArrayList<>();
+    /**
+     * Calcula el subtotal del item del carrito.
+     */
+    @Transient
+    public BigDecimal getSubtotal() {
+        if (precioUnitario == null || cantidad == null) {
+            return BigDecimal.ZERO;
         }
-        items.add(detalle);
-        detalle.setCarritoCompra(this);
-        
-        // Actualizar el total estimado
-        if (totalEstimado == null) {
-            totalEstimado = BigDecimal.ZERO;
-        }
-        totalEstimado = totalEstimado.add(detalle.getSubtotal());
+        return precioUnitario.multiply(BigDecimal.valueOf(cantidad));
     }
 }

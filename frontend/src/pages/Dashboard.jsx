@@ -6,6 +6,7 @@ import {Grid, Card, CardContent, Typography, CircularProgress, Box, TextField, B
 import {ShoppingCart, TrendingUp, DollarSign, Package, Filter, Trash2, Plus, Search, User, X} from 'lucide-react'
 import axiosInstance from '../config/axios';
 import { formatCOP } from '../utils/formatters';
+import { obtenerEmpleadoId } from '../utils/authHelper';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategoria, setFilterCategoria] = useState('TODAS')
   const [filterEstado, setFilterEstado] = useState('TODOS')
+  const [userRole, setUserRole] = useState('') // Rol del usuario
   
   // Estados del carrito
   const [carritoOpen, setCarritoOpen] = useState(false)
@@ -29,14 +31,78 @@ export default function Dashboard() {
 
   const navigate = useNavigate();
 
+  // Cargar carrito desde localStorage al iniciar
+  useEffect(() => {
+    const carritoGuardado = localStorage.getItem('carrito');
+    const productosSeleccionadosGuardados = localStorage.getItem('productosSeleccionados');
+    
+    if (carritoGuardado) {
+      try {
+        const items = JSON.parse(carritoGuardado);
+        setCarritoItems(items);
+        console.log('🛒 Carrito cargado desde localStorage:', items);
+      } catch (error) {
+        console.error('Error al cargar carrito:', error);
+      }
+    }
+    
+    if (productosSeleccionadosGuardados) {
+      try {
+        const ids = JSON.parse(productosSeleccionadosGuardados);
+        setProductosSeleccionados(new Set(ids));
+        console.log('✅ Productos seleccionados cargados:', ids);
+      } catch (error) {
+        console.error('Error al cargar productos seleccionados:', error);
+      }
+    }
+  }, []);
+
+  // Guardar carrito en localStorage cada vez que cambia
+  useEffect(() => {
+    if (carritoItems.length > 0) {
+      localStorage.setItem('carrito', JSON.stringify(carritoItems));
+      console.log('💾 Carrito guardado en localStorage');
+    } else {
+      localStorage.removeItem('carrito');
+    }
+  }, [carritoItems]);
+
+  // Guardar productos seleccionados en localStorage
+  useEffect(() => {
+    if (productosSeleccionados.size > 0) {
+      localStorage.setItem('productosSeleccionados', JSON.stringify([...productosSeleccionados]));
+    } else {
+      localStorage.removeItem('productosSeleccionados');
+    }
+  }, [productosSeleccionados]);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) navigate('/login'); // redirige si no hay token
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    // Obtener el rol del usuario desde el token
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const rol = payload.rol || '';
+      setUserRole(rol);
+      console.log('👤 Rol del usuario en Dashboard:', rol);
+    } catch (error) {
+      console.error('Error al decodificar token:', error);
+      navigate('/login-empleado');
+      return;
+    }
 
     const fetchProductos = async () => {
       try {
         const response = await axiosInstance.get('/productos')
-        setProductos(response.data || [])
+        console.log('📦 Productos recibidos:', response.data);
+        
+        // La API devuelve { success: true, productos: [...], total: X, schemaName: 'empresa_X' }
+        const productosData = response.data?.productos || response.data || [];
+        setProductos(productosData)
       } catch (error) {
         console.log("Error al cargar los productos", error)
         setError('Error al cargar los productos')
@@ -49,7 +115,15 @@ export default function Dashboard() {
     const fetchClientes = async () => {
       try {
         const response = await axiosInstance.get('/clientes')
-        setClientes(response.data || [])
+        console.log('📊 Clientes recibidos:', response.data);
+        
+        // Asegurar que siempre sea un array
+        const clientesData = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data?.data || response.data?.clientes || []);
+        
+        console.log('📊 Clientes procesados como array:', clientesData);
+        setClientes(clientesData);
       } catch (error) {
         console.log("Error al cargar los clientes", error)
         setClientes([])
@@ -69,16 +143,17 @@ export default function Dashboard() {
 
     const matchCategoria = filterCategoria === 'TODAS' || prod.categoria === filterCategoria;
 
+    // Usar 'activo' en lugar de 'estadoActivo'
     const matchEstado = filterEstado === 'TODOS' ||
-                        (filterEstado === 'ACTIVO' && prod.estadoActivo) ||
-                        (filterEstado === 'INACTIVO' && !prod.estadoActivo);
+                        (filterEstado === 'ACTIVO' && prod.activo) ||
+                        (filterEstado === 'INACTIVO' && !prod.activo);
     return matchSearch && matchCategoria && matchEstado;
   }) : [];
 
   // Calcular estadisticas
   const stats = {
     total: Array.isArray(productos) ? productos.length : 0,
-    activos: Array.isArray(productos) ? productos.filter(p => p.estadoActivo).length : 0,
+    activos: Array.isArray(productos) ? productos.filter(p => p.activo).length : 0,
     stockBajo: Array.isArray(productos) ? productos.filter(p => p.stock < 10).length : 0,
     valorTotal: Array.isArray(productos) ? productos.reduce((sum, p) => sum + (p.precioVenta * p.stock), 0) : 0
   };
@@ -133,6 +208,10 @@ export default function Dashboard() {
     setCarritoItems([]);
     setProductosSeleccionados(new Set());
     setCarritoOpen(false);
+    // Limpiar localStorage
+    localStorage.removeItem('carrito');
+    localStorage.removeItem('productosSeleccionados');
+    console.log('🗑️ Carrito limpiado de localStorage');
   };
 
   const procesarVenta = async (datosVenta) => {
@@ -145,27 +224,33 @@ export default function Dashboard() {
     }
   };
 
-  const clientesFiltrados = clientes.filter(cliente =>
+  const clientesFiltrados = Array.isArray(clientes) ? clientes.filter(cliente =>
     `${cliente.nombre} ${cliente.apellido}`.toLowerCase().includes(searchCliente.toLowerCase()) ||
-    cliente.cedula.includes(searchCliente)
-  );
+    (cliente.cedula || cliente.documento || '').includes(searchCliente)
+  ) : [];
 
   const confirmarVenta = async () => {
     if (!clienteSeleccionado || !ventaData) return;
 
     try {
-      // Obtener el empleado del localStorage
-      const empleadoId = localStorage.getItem('empleadoId');
+      // Obtener empleadoId usando el helper
+      const empleadoId = obtenerEmpleadoId();
       
       if (!empleadoId) {
-        alert('Error: No se pudo identificar el empleado. Por favor inicie sesión nuevamente.');
+        alert('❌ Error: No se pudo identificar el empleado. Por favor cierre sesión e inicie sesión nuevamente.');
         return;
       }
 
-      // Usar carritoItems para asegurar descuentos individuales actualizados
+      console.log('✅ Empleado ID para la venta:', empleadoId);
+
+      // Preparar datos de la factura según el formato esperado por la API
       const facturaData = {
         clienteId: clienteSeleccionado.id,
         empleadoId: parseInt(empleadoId),
+        metodoPago: ventaData.metodoPago || 'EFECTIVO',
+        impuesto: ventaData.impuesto || 0,
+        descuento: ventaData.descuentoTotal || 0,
+        notas: ventaData.notas || '',
         detalles: carritoItems.map(item => ({
           productoId: item.id,
           cantidad: item.cantidad,
@@ -173,7 +258,11 @@ export default function Dashboard() {
         }))
       };
 
+      console.log('📝 Creando factura:', facturaData);
+
       const response = await axiosInstance.post('/facturas', facturaData);
+      
+      console.log('✅ Factura creada:', response.data);
       
       // Limpiar carrito y cerrar dialogs
       limpiarCarrito();
@@ -181,11 +270,19 @@ export default function Dashboard() {
       setClienteSeleccionado(null);
       setVentaData(null);
       
-      alert(`Venta realizada exitosamente! Factura N° ${response.data.numeroFactura}`);
+      // Mostrar número de factura desde la respuesta
+      const numeroFactura = response.data?.numeroFactura || response.data?.factura?.numeroFactura || 'N/A';
+      alert(`✅ Venta realizada exitosamente!\nFactura N° ${numeroFactura}`);
       
     } catch (error) {
-      console.error('Error al crear factura:', error);
-      alert('Error al procesar la venta. Intente nuevamente.');
+      console.error('❌ Error al crear factura:', error);
+      console.error('Detalles del error:', error.response?.data);
+      
+      const mensajeError = error.response?.data?.message || 
+                          error.response?.data?.mensaje || 
+                          'Error al procesar la venta. Intente nuevamente.';
+      
+      alert(`❌ ${mensajeError}`);
     }
   };
 
@@ -256,27 +353,30 @@ export default function Dashboard() {
             Gestión de Productos
           </Typography>
 
-          <Button
-            variant="contained"
-            startIcon={<Plus size={20} />}
-            onClick={() => navigate('/productos/create')}
-            sx={{
-              background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
-              borderRadius: '12px',
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 3,
-              boxShadow: '0 4px 20px rgba(147, 112, 219, 0.4)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #a280e0 0%, #7b6bd4 100%)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 6px 28px rgba(147, 112, 219, 0.6)',
-              },
-              transition: 'all 0.3s ease'
-            }}
-          >
-            Agregar Producto
-          </Button>
+          {/* Mostrar botón "Agregar Producto" solo si el usuario es ADMIN */}
+          {userRole === 'ADMIN' && (
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
+              onClick={() => navigate('/productos/create')}
+              sx={{
+                background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+                boxShadow: '0 4px 20px rgba(147, 112, 219, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #a280e0 0%, #7b6bd4 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 28px rgba(147, 112, 219, 0.6)',
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Agregar Producto
+            </Button>
+          )}
         </Box>
 
         {/* Tarjetas de estadísticas */}
@@ -610,13 +710,13 @@ export default function Dashboard() {
                         {prod.nombre}
                       </Typography>
                       <Chip 
-                        label={prod.estadoActivo ? 'Activo' : 'Inactivo'}
+                        label={prod.activo ? 'Activo' : 'Inactivo'}
                         size="small"
                         sx={{
-                          background: prod.estadoActivo 
+                          background: prod.activo 
                             ? 'rgba(76, 175, 80, 0.2)' 
                             : 'rgba(244, 67, 54, 0.2)',
-                          color: prod.estadoActivo ? '#81c784' : '#e57373',
+                          color: prod.activo ? '#81c784' : '#e57373',
                           fontWeight: 600,
                           fontSize: '0.75rem'
                         }}

@@ -57,36 +57,89 @@ export default function CreateProduct() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [userRole, setUserRole] = useState('');
   
   const navigate = useNavigate();
+
+  // Verificar permisos y cargar datos iniciales
+  useEffect(() => {
+    // Obtener el rol del usuario desde el token
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const rol = payload.rol || '';
+        setUserRole(rol);
+        console.log('👤 Rol del usuario:', rol);
+        
+        // Si no es ADMIN, redirigir al dashboard
+        if (rol !== 'ADMIN') {
+          setError('No tienes permisos para crear productos. Solo usuarios ADMIN pueden crear productos.');
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 3000);
+          return;
+        }
+      } catch (error) {
+        console.error('Error al decodificar token:', error);
+        navigate('/login-empleado');
+        return;
+      }
+    } else {
+      navigate('/login-empleado');
+      return;
+    }
+    
+    // Generar código de producto
+    generateProductCode();
+  }, [navigate]);
 
   // Generar código de producto automáticamente
   const generateProductCode = async () => {
     try {
       const response = await axiosInstance.get('/productos');
-      const productos = response.data || [];
+      console.log('📦 Respuesta completa de productos:', response.data);
+      
+      // La API devuelve { success: true, productos: [...], total: X, schemaName: 'empresa_X' }
+      const productosData = response.data?.productos || response.data || [];
+      console.log('📦 Productos extraídos:', productosData);
+      console.log('📦 Total de productos:', productosData.length);
+      
+      if (!Array.isArray(productosData)) {
+        console.error('❌ productosData no es un array:', productosData);
+        setFormData(prev => ({
+          ...prev,
+          codigo: 'PROD001'
+        }));
+        return;
+      }
       
       // Encontrar el último número de producto
       let maxNumber = 0;
-      productos.forEach(producto => {
+      productosData.forEach(producto => {
         if (producto.codigo && producto.codigo.startsWith('PROD')) {
           const number = parseInt(producto.codigo.replace('PROD', ''));
+          console.log(`📌 Código encontrado: ${producto.codigo} → Número: ${number}`);
           if (!isNaN(number) && number > maxNumber) {
             maxNumber = number;
           }
         }
       });
       
+      console.log(`✅ Máximo número encontrado: ${maxNumber}`);
+      
       // Generar el siguiente código
       const nextNumber = maxNumber + 1;
       const newCode = `PROD${nextNumber.toString().padStart(3, '0')}`;
+      
+      console.log(`🆕 Nuevo código generado: ${newCode}`);
       
       setFormData(prev => ({
         ...prev,
         codigo: newCode
       }));
     } catch (error) {
-      console.error('Error al generar código:', error);
+      console.error('❌ Error al generar código:', error);
       // Código por defecto si hay error
       setFormData(prev => ({
         ...prev,
@@ -94,11 +147,6 @@ export default function CreateProduct() {
       }));
     }
   };
-
-  // Ejecutar al cargar el componente
-  useEffect(() => {
-    generateProductCode();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

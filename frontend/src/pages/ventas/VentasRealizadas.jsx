@@ -35,9 +35,18 @@ export default function VentasRealizadas() {
   const fetchFacturas = async () => {
     try {
       const response = await axiosInstance.get('/facturas');
-      setFacturas(response.data || []);
+      console.log('📊 Respuesta completa del backend:', response.data);
+      
+      // El backend devuelve { success: true, facturas: [...], total: X, schemaName: 'empresa_X' }
+      const facturasData = response.data?.facturas || [];
+      
+      console.log('📊 Facturas extraídas:', facturasData);
+      console.log('📊 Primera factura (ejemplo):', facturasData[0]);
+      
+      setFacturas(facturasData);
     } catch (error) {
-      console.error("Error al cargar las facturas", error);
+      console.error("❌ Error al cargar las facturas:", error);
+      console.error("Detalles del error:", error.response?.data);
       setError('Error al cargar las facturas');
       setFacturas([]);
     } finally {
@@ -45,11 +54,17 @@ export default function VentasRealizadas() {
     }
   };
 
-  const facturasFiltradas = Array.isArray(facturas) ? facturas.filter(factura =>
-    factura.numeroFactura.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (factura.clienteNombre && factura.clienteNombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (factura.empleadoNombre && factura.empleadoNombre.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) : [];
+  const facturasFiltradas = Array.isArray(facturas) ? facturas.filter(factura => {
+    const numeroFactura = factura.numeroFactura || factura.numero || '';
+    const clienteNombre = factura.clienteNombre || 
+                         (factura.cliente ? `${factura.cliente.nombre} ${factura.cliente.apellido}` : '');
+    const empleadoNombre = factura.empleadoNombre || 
+                          (factura.empleado ? `${factura.empleado.nombre} ${factura.empleado.apellido}` : '');
+    
+    return numeroFactura.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           clienteNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           empleadoNombre.toLowerCase().includes(searchTerm.toLowerCase());
+  }) : [];
 
   const handleOpenDetail = (factura) => {
     setSelectedFactura(factura);
@@ -392,10 +407,10 @@ export default function VentasRealizadas() {
                     <Grid item xs={12} sm={3}>
                       <Box>
                         <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
-                          {factura.numeroFactura}
+                          {factura.numeroFactura || factura.numero || 'N/A'}
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                          {new Date(factura.fechaEmision).toLocaleDateString('es-CO', {
+                          {new Date(factura.fechaEmision || factura.fecha).toLocaleDateString('es-CO', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric'
@@ -409,7 +424,8 @@ export default function VentasRealizadas() {
                         <User size={16} color="rgba(255,255,255,0.5)" />
                         <Box>
                           <Typography variant="body2" sx={{ color: '#fff' }}>
-                            {factura.clienteNombre || 'N/A'}
+                            {factura.clienteNombre || 
+                             (factura.cliente ? `${factura.cliente.nombre} ${factura.cliente.apellido}` : 'N/A')}
                           </Typography>
                           <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
                             Cliente
@@ -418,7 +434,7 @@ export default function VentasRealizadas() {
                       </Box>
                     </Grid>
                     
-                    <Grid item xs={12} sm={2}>
+                    <Grid item xs={12} sm={3}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <DollarSign size={16} color="rgba(255,255,255,0.5)" />
                         <Typography variant="h6" sx={{ color: '#9370db', fontWeight: 600 }}>
@@ -427,7 +443,7 @@ export default function VentasRealizadas() {
                       </Box>
                     </Grid>
                     
-                    <Grid item xs={12} sm={2}>
+                    <Grid item xs={12} sm={3}>
                       <Chip 
                         label={factura.estado}
                         size="small"
@@ -439,26 +455,35 @@ export default function VentasRealizadas() {
                         }}
                       />
                     </Grid>
-                    
-                    <Grid item xs={12} sm={2}>
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenDetail(factura);
-                        }}
-                        sx={{
-                          color: '#9370db',
-                          '&:hover': { backgroundColor: 'rgba(147, 112, 219, 0.1)' }
-                        }}
-                      >
-                        <Eye size={20} />
-                      </IconButton>
-                    </Grid>
                   </Grid>
                 </AccordionSummary>
                 
                 <AccordionDetails sx={{ pt: 0 }}>
                   <Divider sx={{ mb: 3, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+                  
+                  {/* Botón Ver Detalle */}
+                  <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Eye size={18} />}
+                      onClick={() => handleOpenDetail(factura)}
+                      sx={{
+                        borderColor: 'rgba(147, 112, 219, 0.5)',
+                        color: '#9370db',
+                        borderRadius: '12px',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        '&:hover': {
+                          borderColor: '#9370db',
+                          background: 'rgba(147, 112, 219, 0.1)',
+                          transform: 'translateY(-2px)'
+                        },
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      Ver Detalle Completo
+                    </Button>
+                  </Box>
                   
                   <Grid container spacing={3}>
                     <Grid item xs={12} md={6}>
@@ -467,7 +492,8 @@ export default function VentasRealizadas() {
                       </Typography>
                       <Box sx={{ pl: 2 }}>
                         <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
-                          {factura.empleadoNombre || 'N/A'}
+                          {factura.empleadoNombre || 
+                           (factura.empleado ? `${factura.empleado.nombre} ${factura.empleado.apellido}` : 'N/A')}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
                           Vendedor responsable
@@ -609,10 +635,10 @@ export default function VentasRealizadas() {
                       Información de Factura
                     </Typography>
                     <Typography variant="h6" sx={{ color: '#fff', mb: 1 }}>
-                      {selectedFactura.numeroFactura}
+                      {selectedFactura.numeroFactura || selectedFactura.numero || 'N/A'}
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                      {new Date(selectedFactura.fechaEmision).toLocaleString('es-CO')}
+                      {new Date(selectedFactura.fechaEmision || selectedFactura.fecha).toLocaleString('es-CO')}
                     </Typography>
                   </Card>
                 </Grid>

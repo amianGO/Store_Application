@@ -2,7 +2,11 @@ package com.example.inventory_app.Repositories;
 
 import com.example.inventory_app.Entities.CarritoCompra;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -17,13 +21,6 @@ import java.util.Optional;
 public interface CarritoCompraRepository extends JpaRepository<CarritoCompra, Long> {
     
     /**
-     * Busca carritos por cliente.
-     * @param clienteId ID del cliente
-     * @return Lista de carritos del cliente
-     */
-    List<CarritoCompra> findByClienteId(Long clienteId);
-    
-    /**
      * Busca carritos por empleado.
      * @param empleadoId ID del empleado
      * @return Lista de carritos gestionados por el empleado
@@ -31,24 +28,26 @@ public interface CarritoCompraRepository extends JpaRepository<CarritoCompra, Lo
     List<CarritoCompra> findByEmpleadoId(Long empleadoId);
     
     /**
-     * Busca carritos por estado.
-     * @param estado Estado del carrito
-     * @return Lista de carritos con el estado especificado
+     * Busca un carrito por empleado y producto.
+     * @param empleadoId ID del empleado
+     * @param productoId ID del producto
+     * @return Optional con el carrito si existe
      */
-    List<CarritoCompra> findByEstado(String estado);
+    Optional<CarritoCompra> findByEmpleadoIdAndProductoId(Long empleadoId, Long productoId);
     
     /**
-     * Busca el carrito activo de un cliente.
-     * @param clienteId ID del cliente
-     * @param estado Estado activo del carrito
-     * @return Optional con el carrito activo si existe
+     * Elimina carritos por ID de empleado.
+     * @param empleadoId ID del empleado
      */
-    Optional<CarritoCompra> findByClienteIdAndEstado(Long clienteId, String estado);
+    @Modifying
+    @Query("DELETE FROM CarritoCompra c WHERE c.empleadoId = :empleadoId")
+    void deleteByEmpleadoId(@Param("empleadoId") Long empleadoId);
     
     /**
-     * Elimina los carritos abandonados por más de cierto tiempo.
-     * @param fecha Fecha límite para considerar un carrito como abandonado
-     * @return Número de carritos eliminados
+     * Cuenta el número de carritos por ID de empleado.
+     * @param empleadoId ID del empleado
+     * @return Número de carritos del empleado
      */
-    Long deleteByFechaCreacionBeforeAndEstado(java.util.Date fecha, String estado);
+    @Query("SELECT COUNT(c) FROM CarritoCompra c WHERE c.empleadoId = :empleadoId")
+    Long countByEmpleadoId(@Param("empleadoId") Long empleadoId);
 }

@@ -4,11 +4,11 @@ import Navbar from '../components/Navbar';
 import {
   Grid, Card, CardContent, Typography, CircularProgress, Box, 
   TextField, Button, InputAdornment, Chip, Dialog, DialogTitle, 
-  DialogContent, DialogActions, MenuItem, Fab
+  DialogContent, DialogActions, MenuItem, Fab, FormControlLabel, Switch
 } from '@mui/material';
 import { 
   Users, Search, Plus, Edit, Trash2, Phone, Mail, 
-  MapPin, Calendar, User 
+  MapPin, Calendar, User, Power
 } from 'lucide-react';
 import axiosInstance from '../config/axios';
 
@@ -19,27 +19,43 @@ export default function ClienteManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
     documento: '',
     telefono: '',
     email: '',
-    direccion: ''
+    direccion: '',
+    ciudad: '',
+    pais: '',
+    activo: true
   });
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) navigate('/login');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    
     fetchClientes();
   }, [navigate]);
 
   const fetchClientes = async () => {
     try {
+      setLoading(true);
       const response = await axiosInstance.get('/clientes');
-      setClientes(response.data || []);
+      console.log('📊 Clientes recibidos:', response.data);
+      
+      // Manejar diferentes formatos de respuesta
+      const clientesData = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.clientes || response.data?.data || []);
+      
+      setClientes(clientesData);
     } catch (error) {
       console.error("Error al cargar los clientes", error);
       setError('Error al cargar los clientes');
@@ -60,12 +76,15 @@ export default function ClienteManagement() {
     if (cliente) {
       setEditingCliente(cliente);
       setFormData({
-        nombre: cliente.nombre,
-        apellido: cliente.apellido,
-        documento: cliente.documento,
+        nombre: cliente.nombre || '',
+        apellido: cliente.apellido || '',
+        documento: cliente.documento || '',
         telefono: cliente.telefono || '',
         email: cliente.email || '',
-        direccion: cliente.direccion || ''
+        direccion: cliente.direccion || '',
+        ciudad: cliente.ciudad || '',
+        pais: cliente.pais || '',
+        activo: cliente.activo !== undefined ? cliente.activo : true
       });
     } else {
       setEditingCliente(null);
@@ -75,9 +94,13 @@ export default function ClienteManagement() {
         documento: '',
         telefono: '',
         email: '',
-        direccion: ''
+        direccion: '',
+        ciudad: '',
+        pais: '',
+        activo: true
       });
     }
+    setError('');
     setOpenDialog(true);
   };
 
@@ -90,11 +113,38 @@ export default function ClienteManagement() {
       documento: '',
       telefono: '',
       email: '',
-      direccion: ''
+      direccion: '',
+      ciudad: '',
+      pais: '',
+      activo: true
     });
+    setError('');
+  };
+
+  const handleFormChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.nombre || !formData.apellido || !formData.documento) {
+      setError('Nombre, apellido y documento son obligatorios');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
     try {
       if (editingCliente) {
         await axiosInstance.put(`/clientes/${editingCliente.id}`, formData);
@@ -105,7 +155,9 @@ export default function ClienteManagement() {
       handleCloseDialog();
     } catch (error) {
       console.error('Error al guardar cliente:', error);
-      alert('Error al guardar cliente');
+      setError(error.response?.data?.message || 'Error al guardar cliente');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -307,11 +359,13 @@ export default function ClienteManagement() {
                         {cliente.nombre} {cliente.apellido}
                       </Typography>
                       <Chip 
-                        label={cliente.estadoActivo ? 'ACTIVO' : 'INACTIVO'}
+                        label={cliente.activo ? 'ACTIVO' : 'INACTIVO'}
                         size="small"
                         sx={{
-                          background: cliente.estadoActivo ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)',
-                          color: cliente.estadoActivo ? '#81c784' : '#f48fb1',
+                          background: cliente.activo 
+                            ? 'rgba(76, 175, 80, 0.2)' 
+                            : 'rgba(244, 67, 54, 0.2)',
+                          color: cliente.activo ? '#81c784' : '#e57373',
                           fontWeight: 600,
                           fontSize: '0.75rem'
                         }}
@@ -504,10 +558,49 @@ export default function ClienteManagement() {
               <TextField
                 fullWidth
                 label="Dirección"
+                name="direccion"
                 multiline
                 rows={2}
                 value={formData.direccion}
-                onChange={(e) => setFormData({...formData, direccion: e.target.value})}
+                onChange={handleFormChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                    '&:hover fieldset': { borderColor: 'rgba(147, 112, 219, 0.5)' },
+                    '&.Mui-focused fieldset': { borderColor: '#9370db' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+                  '& .MuiOutlinedInput-input': { color: '#fff' },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Ciudad"
+                name="ciudad"
+                value={formData.ciudad}
+                onChange={handleFormChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                    '&:hover fieldset': { borderColor: 'rgba(147, 112, 219, 0.5)' },
+                    '&.Mui-focused fieldset': { borderColor: '#9370db' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.7)' },
+                  '& .MuiOutlinedInput-input': { color: '#fff' },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="País"
+                name="pais"
+                value={formData.pais}
+                onChange={handleFormChange}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     background: 'rgba(255, 255, 255, 0.05)',
@@ -521,26 +614,88 @@ export default function ClienteManagement() {
               />
             </Grid>
 
+            {/* Estado Activo - Solo mostrar al editar */}
+            {editingCliente && (
+              <Grid item xs={12}>
+                <Card
+                  sx={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    p: 2
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Power size={20} color="#9370db" />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600 }}>
+                        Estado del Cliente
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                        {formData.activo ? 'El cliente está activo' : 'El cliente está inactivo'}
+                      </Typography>
+                    </Box>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.activo}
+                          onChange={(e) => setFormData(prev => ({ ...prev, activo: e.target.checked }))}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#4caf50',
+                              '&:hover': {
+                                backgroundColor: 'rgba(76, 175, 80, 0.08)',
+                              },
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#4caf50',
+                            },
+                            '& .MuiSwitch-track': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                            },
+                          }}
+                        />
+                      }
+                      label=""
+                      sx={{ m: 0 }}
+                    />
+                  </Box>
+                </Card>
+              </Grid>
+            )}
           </Grid>
+          
+          {error && (
+            <Box sx={{ mt: 2 }}>
+              <Typography sx={{ color: '#f44336', fontSize: '0.875rem' }}>
+                {error}
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>
           <Button 
             onClick={handleCloseDialog}
             sx={{ color: 'rgba(255,255,255,0.7)' }}
+            disabled={submitting}
           >
             Cancelar
           </Button>
           <Button 
             onClick={handleSubmit}
             variant="contained"
+            disabled={submitting}
             sx={{
               background: 'linear-gradient(135deg, #9370db 0%, #6a5acd 100%)',
               '&:hover': {
                 background: 'linear-gradient(135deg, #a280e0 0%, #7b6bd4 100%)',
+              },
+              '&:disabled': {
+                background: 'rgba(147, 112, 219, 0.3)'
               }
             }}
           >
-            {editingCliente ? 'Actualizar' : 'Guardar'}
+            {submitting ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : (editingCliente ? 'Actualizar' : 'Guardar')}
           </Button>
         </DialogActions>
       </Dialog>

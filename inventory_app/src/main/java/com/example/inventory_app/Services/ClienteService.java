@@ -34,11 +34,31 @@ public interface ClienteService {
     Optional<Cliente> findByDocumento(String documento);
     
     /**
-     * Busca clientes por nombre o apellido.
-     * @param texto Texto a buscar
+     * Busca un cliente por su email.
+     * @param email Email del cliente
+     * @return Optional con el cliente si existe
+     */
+    Optional<Cliente> findByEmail(String email);
+    
+    /**
+     * Busca clientes por nombre.
+     * @param busqueda Texto a buscar en el nombre
      * @return Lista de clientes que coinciden
      */
-    List<Cliente> findByNombreOrApellido(String texto);
+    List<Cliente> buscarPorNombre(String busqueda);
+    
+    /**
+     * Busca clientes por ciudad.
+     * @param ciudad Ciudad a buscar
+     * @return Lista de clientes que coinciden
+     */
+    List<Cliente> findByCiudad(String ciudad);
+    
+    /**
+     * Obtiene todos los clientes.
+     * @return Lista de todos los clientes
+     */
+    List<Cliente> findAll();
     
     /**
      * Obtiene todos los clientes activos.
@@ -47,15 +67,14 @@ public interface ClienteService {
     List<Cliente> findAllActive();
     
     /**
+     * Elimina un cliente.
+     * @param id ID del cliente a eliminar
+     */
+    void delete(Long id);
+    
+    /**
      * Desactiva un cliente.
      * @param id ID del cliente a desactivar
      */
     void deactivate(Long id);
-    
-    /**
-     * Verifica si existe un cliente con el documento dado.
-     * @param documento Documento a verificar
-     * @return true si existe, false si no
-     */
-    boolean existsByDocumento(String documento);
 }

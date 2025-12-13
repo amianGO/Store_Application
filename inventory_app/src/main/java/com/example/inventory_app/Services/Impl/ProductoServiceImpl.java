@@ -27,16 +27,10 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public Producto save(Producto producto) {
-        if (producto.getId() == null) {
-            // Producto nuevo
-            producto.setEstadoActivo(true);
-            producto.setFechaRegistro(new java.util.Date());
-            
-            // Solo aplicar lógica automática en productos nuevos
-            if (producto.getStock() != null && producto.getStock() == 0) {
-                producto.setEstadoActivo(false);
-            }
-        } else {
+        // @PrePersist se encarga de establecer createdAt, updatedAt y activo=true automáticamente
+        // Solo manejamos lógica de negocio específica
+        
+        if (producto.getId() != null) {
             // Producto existente - verificar si cambió el stock
             Optional<Producto> productoExistente = productoRepository.findById(producto.getId());
             if (productoExistente.isPresent()) {
@@ -45,13 +39,12 @@ public class ProductoServiceImpl implements ProductoService {
                 // Solo aplicar lógica automática si el stock cambió
                 if (!existente.getStock().equals(producto.getStock())) {
                     if (producto.getStock() != null && producto.getStock() == 0) {
-                        producto.setEstadoActivo(false);
-                    } else if (producto.getStock() != null && producto.getStock() > 0 && !existente.isEstadoActivo()) {
+                        producto.setActivo(false);
+                    } else if (producto.getStock() != null && producto.getStock() > 0 && !existente.isActivo()) {
                         // Solo reactivar si estaba inactivo Y ahora tiene stock
-                        producto.setEstadoActivo(true);
+                        producto.setActivo(true);
                     }
                 }
-                // Si el stock no cambió, respetar el estadoActivo que viene del frontend
             }
         }
         
@@ -85,7 +78,7 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional(readOnly = true)
     public List<Producto> findByRangoPrecio(BigDecimal precioMin, BigDecimal precioMax) {
-        return productoRepository.findByPrecioVentaBetweenAndEstadoActivoTrue(precioMin, precioMax);
+        return productoRepository.findByPrecioVentaBetweenAndActivoTrue(precioMin, precioMax);
     }
 
     @Override
@@ -102,10 +95,10 @@ public class ProductoServiceImpl implements ProductoService {
         
         // Lógica automática: Si stock llega a 0, desactivar producto
         if (nuevoStock == 0) {
-            producto.setEstadoActivo(false);
-        } else if (nuevoStock > 0 && !producto.isEstadoActivo()) {
+            producto.setActivo(false);
+        } else if (nuevoStock > 0 && !producto.isActivo()) {
             // Si se agrega stock a un producto inactivo, reactivarlo
-            producto.setEstadoActivo(true);
+            producto.setActivo(true);
         }
         
         return productoRepository.save(producto);
@@ -118,9 +111,23 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
+    public void deactivate(Long id) {
+        productoRepository.findById(id).ifPresent(producto -> {
+            producto.setActivo(false);
+            productoRepository.save(producto);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Producto> findAllActive() {
+        return productoRepository.findByActivoTrue();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<Producto> findByNombre(String nombre) {
-        return productoRepository.findByNombreContainingIgnoreCaseAndEstadoActivoTrue(nombre);
+        return productoRepository.findByNombreContainingIgnoreCaseAndActivoTrue(nombre);
     }
 
     @Override
