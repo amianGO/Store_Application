@@ -70,17 +70,34 @@ public CorsConfigurationSource corsConfigurationSource() {
    openssl rand -base64 32
    ```
 
-2. **NUNCA commitear archivos .env:**
+2. **NUNCA commitear archivos con credenciales:**
    ```bash
-   # Verifica que .env esté en .gitignore
+   # Verifica que estén en .gitignore
    echo ".env" >> .gitignore
    echo ".env.local" >> .gitignore
    echo ".env.production" >> .gitignore
+   echo "application.properties" >> inventory_app/.gitignore
    ```
 
-3. **Rotar secrets periódicamente:**
+3. **Usar archivos .example como templates:**
+   - ✅ `application.properties.example` - Template sin credenciales (SÍ commitear)
+   - ❌ `application.properties` - Con credenciales reales (NO commitear)
+   - Copiar el .example y configurar valores reales localmente
+
+4. **Si ya commiteaste credenciales:**
+   ```bash
+   # Remover del tracking (mantiene archivo local)
+   git rm --cached ruta/al/archivo/sensible
+   git commit -m "security: remove sensitive file from tracking"
+   git push
+   
+   # Luego rotar TODAS las credenciales expuestas
+   ```
+
+5. **Rotar secrets periódicamente:**
    - Cambia JWT_SECRET_KEY cada 3-6 meses
    - Cambia Gmail App Password si lo compartes accidentalmente
+   - Cambia password de BD después de compartir el proyecto
 
 ---
 
