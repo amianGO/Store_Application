@@ -1,0 +1,24 @@
+# Archivos de entorno (NUNCA commitear)
+.env
+.env.local
+.env.production.local
+
+# Archivos de configuración con datos sensibles
+CONFIGURACION_URLS.md
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
