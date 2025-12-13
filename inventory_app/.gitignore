@@ -32,5 +32,12 @@ build/
 ### VS Code ###
 .vscode/
 
+### Archivos sensibles con credenciales ###
 .fake
 .application.properties
+application.properties
+src/main/resources/application.properties
+*.env
+.env
+.env.local
+.env.production.local
