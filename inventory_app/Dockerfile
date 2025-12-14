@@ -23,5 +23,5 @@ RUN ./mvnw clean package -DskipTests
 # Exponer el puerto (Render asigna dinámicamente el PORT)
 EXPOSE 8080
 
-# Ejecutar la aplicación usando el JAR generado
-CMD ["java", "-jar", "target/inventory_app-0.0.1-SNAPSHOT.jar"]
+# Ejecutar la aplicación con el perfil de producción
+CMD ["java", "-Dspring.profiles.active=prod", "-jar", "target/inventory_app-0.0.1-SNAPSHOT.jar"]
