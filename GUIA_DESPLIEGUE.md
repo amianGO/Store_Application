@@ -102,7 +102,7 @@ En la sección **"Environment Variables"**, agrega:
 
 ```bash
 # Base de Datos (USA LA INTERNAL URL - sin .oregon-postgres.render.com)
-DATABASE_URL=postgresql://store_db_iqbp_user:eQlqf4sZ3qN1bd0CEzJeeU5DMKDHPubI@dpg-d4ud120gjchc73c6mr6g-a/store_db_iqbp
+DATABASE_URL=postgresql://store_db_iqbp_user:...@dpg-d4ud120gjchc73c6mr6g-a.oregon-postgres.render.com:5432/store_db_iqbp
 
 # JWT Secret (genera uno seguro con: openssl rand -base64 32)
 JWT_SECRET_KEY=AQUI_VA_EL_RESULTADO_DEL_COMANDO_OPENSSL
