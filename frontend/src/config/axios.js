@@ -4,14 +4,29 @@ import axios from 'axios';
 // CONFIGURACIÓN AXIOS PARA MULTI-TENANT
 // ============================================
 
+// Determinar la URL base del API
+const getBaseURL = () => {
+  // En producción (Vercel), usar backend de Render
+  if (window.location.hostname.includes('vercel.app')) {
+    console.log('🌐 Detectado dominio de Vercel, usando backend de Render');
+    return 'https://store-backend-4g34.onrender.com/api';
+  }
+  // En desarrollo, intentar variable de entorno primero, luego localhost
+  const devURL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  console.log('🔧 Modo desarrollo, usando:', devURL);
+  return devURL;
+};
+
 // Configuración base de Axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 segundos
 });
+
+console.log('✅ Axios configurado con baseURL:', api.defaults.baseURL);
 
 // ============================================
 // INTERCEPTOR DE REQUEST (Agregar JWT)
