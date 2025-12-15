@@ -39,7 +39,7 @@ import java.util.Optional;
  * @since 2025-11-27
  */
 @Component
-@Order(2) // Después de Spring Security (order 1)
+@Order(-100) // ANTES de Spring Security para permitir OPTIONS (preflight)
 public class TenantFilter extends OncePerRequestFilter {
 
     @Autowired
