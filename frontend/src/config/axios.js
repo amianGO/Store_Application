@@ -23,7 +23,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 segundos (Render free tier puede tardar en operaciones pesadas)
+  timeout: 120000, // 120 segundos (registro de empresa tarda mucho en Render free tier)
 });
 
 console.log('✅ Axios configurado con baseURL:', api.defaults.baseURL);
