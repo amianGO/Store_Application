@@ -68,12 +68,22 @@ public class TenantFilter extends OncePerRequestFilter {
         
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
+        String origin = request.getHeader("Origin");
         
         // PERMITIR TODAS LAS PETICIONES OPTIONS (preflight CORS)
         if ("OPTIONS".equalsIgnoreCase(method)) {
-            System.out.println("▓ [TENANT-FILTER] ✓ OPTIONS request - permitiendo preflight CORS");
-            filterChain.doFilter(request, response);
-            return;
+            System.out.println("▓ [TENANT-FILTER] ✓ OPTIONS request desde origin: " + origin);
+            
+            // Agregar headers CORS explícitamente para preflight
+            response.setHeader("Access-Control-Allow-Origin", origin != null ? origin : "*");
+            response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+            response.setHeader("Access-Control-Allow-Headers", "*");
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Max-Age", "3600");
+            response.setStatus(HttpServletResponse.SC_OK);
+            
+            System.out.println("▓ [TENANT-FILTER] ✓ Headers CORS agregados, devolviendo 200 OK");
+            return; // No llamar filterChain, responder directamente
         }
         
         System.out.println("\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓");
