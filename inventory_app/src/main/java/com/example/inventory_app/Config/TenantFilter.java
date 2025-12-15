@@ -67,12 +67,21 @@ public class TenantFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         
         String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+        
+        // PERMITIR TODAS LAS PETICIONES OPTIONS (preflight CORS)
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            System.out.println("▓ [TENANT-FILTER] ✓ OPTIONS request - permitiendo preflight CORS");
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         System.out.println("\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓");
         System.out.println("▓ [TENANT-FILTER] Request URI: " + requestURI);
         
         try {
             // CASO ESPECIAL: Login de empleado - necesita leer el body
-            if ("/api/auth/login".equals(requestURI) && "POST".equalsIgnoreCase(request.getMethod())) {
+            if ("/api/auth/login".equals(requestURI) && "POST".equalsIgnoreCase(method)) {
                 System.out.println("▓ [TENANT-FILTER] ⚡ Login de empleado - extrayendo tenantKey del body");
                 
                 // Envolver request para poder leer el body múltiples veces
