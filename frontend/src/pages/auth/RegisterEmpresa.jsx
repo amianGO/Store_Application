@@ -96,6 +96,9 @@ export default function RegisterEmpresa() {
     setLoading(true);
 
     try {
+      console.log('🚀 Enviando petición a:', api.defaults.baseURL + '/auth/empresa/registro');
+      console.log('📦 Datos a enviar:', formData);
+      
       const response = await api.post('/auth/empresa/registro', formData);
 
       console.log('✅ Empresa registrada:', response.data);
@@ -123,11 +126,16 @@ export default function RegisterEmpresa() {
 
     } catch (err) {
       console.error('❌ Error al registrar empresa:', err);
+      console.error('❌ Error response:', err.response);
+      console.error('❌ Error request:', err.request);
+      console.error('❌ Error message:', err.message);
 
       if (err.response?.data?.mensaje) {
         setError(err.response.data.mensaje);
       } else if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.message) {
+        setError(`Error de red: ${err.message}`);
       } else {
         setError('Error al registrar empresa. Por favor intente nuevamente.');
       }
