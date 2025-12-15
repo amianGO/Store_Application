@@ -105,7 +105,7 @@ public class SecurityConfig {
             "http://localhost:5173",
             "http://localhost:5174",
             "https://store-repository.vercel.app",
-            "https://store-application-1iard.vercel.app"
+            "https://store-application-liard.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
