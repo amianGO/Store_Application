@@ -140,9 +140,6 @@ public class SecurityConfig {
                 // Permitir todas las peticiones OPTIONS (preflight CORS)
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
-                // ADMIN ENDPOINTS (TEMPORAL - solo para debug)
-                .requestMatchers("/api/admin/**").permitAll()
-                
                 // Rutas públicas de autenticación (NO requieren JWT)
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/register").permitAll()

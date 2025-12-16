@@ -39,7 +39,7 @@ import java.util.Optional;
  * @since 2025-11-27
  */
 @Component
-@Order(-100) // ANTES de Spring Security para permitir OPTIONS (preflight)
+@Order(2) // Después de Spring Security (order 1)
 public class TenantFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -67,31 +67,12 @@ public class TenantFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         
         String requestURI = request.getRequestURI();
-        String method = request.getMethod();
-        String origin = request.getHeader("Origin");
-        
-        // PERMITIR TODAS LAS PETICIONES OPTIONS (preflight CORS)
-        if ("OPTIONS".equalsIgnoreCase(method)) {
-            System.out.println("▓ [TENANT-FILTER] ✓ OPTIONS request desde origin: " + origin);
-            
-            // Agregar headers CORS explícitamente para preflight
-            response.setHeader("Access-Control-Allow-Origin", origin != null ? origin : "*");
-            response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-            response.setHeader("Access-Control-Allow-Headers", "*");
-            response.setHeader("Access-Control-Allow-Credentials", "true");
-            response.setHeader("Access-Control-Max-Age", "3600");
-            response.setStatus(HttpServletResponse.SC_OK);
-            
-            System.out.println("▓ [TENANT-FILTER] ✓ Headers CORS agregados, devolviendo 200 OK");
-            return; // No llamar filterChain, responder directamente
-        }
-        
         System.out.println("\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓");
         System.out.println("▓ [TENANT-FILTER] Request URI: " + requestURI);
         
         try {
             // CASO ESPECIAL: Login de empleado - necesita leer el body
-            if ("/api/auth/login".equals(requestURI) && "POST".equalsIgnoreCase(method)) {
+            if ("/api/auth/login".equals(requestURI) && "POST".equalsIgnoreCase(request.getMethod())) {
                 System.out.println("▓ [TENANT-FILTER] ⚡ Login de empleado - extrayendo tenantKey del body");
                 
                 // Envolver request para poder leer el body múltiples veces
