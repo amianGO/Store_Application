@@ -1,15 +1,15 @@
-# 📋 Resumen Ejecutivo - Preparación para Despliegue
+# Resumen Ejecutivo - Preparación para Despliegue
 
-## ✅ Estado Actual: LISTO PARA DESPLEGAR
+## Estado Actual: LISTO PARA DESPLEGAR
 
 ---
 
 ## 📦 Archivos Creados
 
 ### Backend (inventory_app/)
-- ✅ `Dockerfile` - Configuración de contenedor para Render
-- ✅ `src/main/resources/application-prod.properties` - Configuración de producción
-- ✅ `.env.example` - Template de variables de entorno
+-- `Dockerfile` - Configuración de contenedor para Render
+-- `src/main/resources/application-prod.properties` - Configuración de producción
+-- `.env.example` - Template de variables de entorno
 
 ### Frontend (frontend/)
 - ✅ `.env.example` - Template de variables de entorno
@@ -63,7 +63,7 @@ https://myaccount.google.com/apppasswords
 - Realizar operaciones básicas
 - Validar multi-tenancy
 
-**⏱️ Tiempo Total Estimado: 45-60 minutos**
+**Tiempo Total Estimado: 45-60 minutos**
 
 ---
 
@@ -97,14 +97,14 @@ VITE_API_URL=          # https://tu-backend.onrender.com
 
 ---
 
-## ✅ Verificación Pre-Despliegue
+## Verificación Pre-Despliegue
 
 ```bash
 cd /Users/gaviria/Documents/dev/Proyectos_Spring/Tienda/Store_Application
 ./verificar-despliegue.sh
 ```
 
-**Resultado actual:** ✅ Todo listo para el despliegue!
+**Resultado actual:** Todo listo para el despliegue!
 
 ---
 
@@ -175,9 +175,9 @@ Una vez desplegado, validar:
 
 **Total: $0/mes** (planes gratuitos)
 
-- ✅ Render PostgreSQL: Free (500MB)
-- ✅ Render Web Service: Free (512MB RAM, sleep después de 15min)
-- ✅ Vercel: Free (100GB bandwidth)
+-- Render PostgreSQL: Free (500MB)
+-- Render Web Service: Free (512MB RAM, sleep después de 15min)
+-- Vercel: Free (100GB bandwidth)
 
 **Limitaciones del plan gratuito:**
 - Backend se suspende tras 15 min inactivos (primera request tarda ~30-60s)
@@ -193,8 +193,8 @@ Una vez desplegado, validar:
 ## 🎓 Lecciones Aprendidas (Para Referencia)
 
 ### Configuración Multi-Tenant
-- ✅ Schemas se crean automáticamente al registrar empresa
-- ✅ TenantContext usa ThreadLocal para aislamiento
+-- Schemas se crean automáticamente al registrar empresa
+-- TenantContext usa ThreadLocal para aislamiento
 - ✅ JdbcTemplate útil para operaciones tenant-specific
 
 ### JWT y Seguridad
@@ -218,7 +218,7 @@ Una vez desplegado, validar:
 
 ---
 
-## 🎉 ¡Estás Listo!
+## ¡Estás Listo!
 
 Todo está preparado para el despliegue. Cuando estés listo:
 

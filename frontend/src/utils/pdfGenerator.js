@@ -62,7 +62,7 @@ export const generateFacturaPDF = async (factura) => {
       <!-- Encabezado -->
       <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #4caf50; padding-bottom: 20px;">
         <h1 style="color: #4caf50; margin: 0; font-size: 36px; font-weight: bold;">FACTURA DE VENTA</h1>
-        <p style="margin: 10px 0 0 0; font-size: 16px; color: #666;">Adrian Gallego</p>
+        <p style="margin: 10px 0 0 0; font-size: 16px; color: #666;">${empleadoNombre}</p>
       </div>
 
       <!-- Información de la factura -->
@@ -127,7 +127,7 @@ export const generateFacturaPDF = async (factura) => {
                 <td style="padding: 10px 8px; border: 1px solid #ddd; text-align: center; font-weight: 500;">${detalle.cantidad}</td>
                 <td style="padding: 10px 8px; border: 1px solid #ddd; text-align: right;">${formatCOP(detalle.precioUnitario)}</td>
                 <td style="padding: 10px 8px; border: 1px solid #ddd; text-align: center;">
-                  ${detalle.descuento > 0 ? `<span style="color: #ff9800; font-weight: 500;">${detalle.descuento}%</span>` : '-'}
+                  ${detalle.descuento && Number(detalle.descuento) > 0 ? `<span style="color: #ff9800; font-weight: 500;">${detalle.descuento}</span>` : '-'}
                 </td>
                 <td style="padding: 10px 8px; border: 1px solid #ddd; text-align: right; font-weight: 500;">${formatCOP(detalle.subtotal)}</td>
               </tr>

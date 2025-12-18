@@ -40,7 +40,7 @@ export default function Dashboard() {
       try {
         const items = JSON.parse(carritoGuardado);
         setCarritoItems(items);
-        console.log('🛒 Carrito cargado desde localStorage:', items);
+        console.log('Carrito cargado desde localStorage:', items);
       } catch (error) {
         console.error('Error al cargar carrito:', error);
       }
@@ -50,7 +50,7 @@ export default function Dashboard() {
       try {
         const ids = JSON.parse(productosSeleccionadosGuardados);
         setProductosSeleccionados(new Set(ids));
-        console.log('✅ Productos seleccionados cargados:', ids);
+        console.log('Productos seleccionados cargados:', ids);
       } catch (error) {
         console.error('Error al cargar productos seleccionados:', error);
       }
@@ -88,7 +88,7 @@ export default function Dashboard() {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const rol = payload.rol || '';
       setUserRole(rol);
-      console.log('👤 Rol del usuario en Dashboard:', rol);
+  console.log('Rol del usuario en Dashboard:', rol);
     } catch (error) {
       console.error('Error al decodificar token:', error);
       navigate('/login-empleado');
@@ -229,6 +229,9 @@ export default function Dashboard() {
     (cliente.cedula || cliente.documento || '').includes(searchCliente)
   ) : [];
 
+
+  /* Actualizado -------------------------------------------------------------*/
+
   const confirmarVenta = async () => {
     if (!clienteSeleccionado || !ventaData) return;
 
@@ -237,32 +240,65 @@ export default function Dashboard() {
       const empleadoId = obtenerEmpleadoId();
       
       if (!empleadoId) {
-        alert('❌ Error: No se pudo identificar el empleado. Por favor cierre sesión e inicie sesión nuevamente.');
+        alert('Error: No se pudo identificar el empleado. Por favor cierre sesión e inicie sesión nuevamente.');
         return;
       }
 
-      console.log('✅ Empleado ID para la venta:', empleadoId);
+      // CALCULAR SUBTOTAL / IVA / DESCUENTO TOTAL desde carrito
+      const subTotalCalc = carritoItems.reduce((sum, item) => {
+        const precio = Number(item.precioUnitario || 0);
+        const cantidad = Number(item.cantidad || 0);
+        const itemSubTotal = precio * cantidad;
+        return sum + itemSubTotal;
+      })
+
+      const descuentoTotalCalc = carritoItems.reduce((sum, item) => {
+        const precio = Number(item.precioUnitario || 0);
+        const cantidad = Number(item.cantidad || 0);
+        const itemSubTotal = precio * cantidad;
+        const descuentoPct = Number(item.descuento || 0);
+        const descuentoMonto = (descuentoPct / 100) * itemSubTotal;
+        return sum + descuentoMonto;
+
+      })
+
+      const ivaCalc = subTotalCalc * 0.19;
+
+      const impuestoMonto = Number(ventaData.impuesto ?? ivaCalc);
+      const descuentoTotalMonto = Number(ventaData.descuentoTotal ?? descuentoTotalCalc);
+
+      //Construir los detalles: enviar descuento como monto (no %)
+      const detallesPayload = carritoItems.map(item => {
+        const cantidad = Number(item.cantidad || 0);
+        const precioUnit = Number(item.precioUnitario || 0);
+        const itemSubtotal = precioUnit * cantidad;
+        const descuentoPct = Number(item.descuento || 0);
+        const descuentoMonto = Number(((descuentoPct / 100) * itemSubtotal).toFixed(2));
+
+        return {
+          productoId: item.id,
+          cantidad: cantidad,
+          // enviar como número (monto) - backend espera descuento en moneda, no en %
+          descuento: descuentoMonto
+        };
+      })
 
       // Preparar datos de la factura según el formato esperado por la API
       const facturaData = {
         clienteId: clienteSeleccionado.id,
-        empleadoId: parseInt(empleadoId),
+        empleadoId: parseInt(empleadoId, 10),
         metodoPago: ventaData.metodoPago || 'EFECTIVO',
-        impuesto: ventaData.impuesto || 0,
-        descuento: ventaData.descuentoTotal || 0,
+        impuesto: Number(impuestoMonto.toFixed(2)),
+        descuento: 0,
         notas: ventaData.notas || '',
-        detalles: carritoItems.map(item => ({
-          productoId: item.id,
-          cantidad: item.cantidad,
-          descuento: item.descuento || 0
-        }))
+        detalles: detallesPayload
       };
 
-      console.log('📝 Creando factura:', facturaData);
+      console.log('Creando factura:', facturaData);
 
       const response = await axiosInstance.post('/facturas', facturaData);
       
-      console.log('✅ Factura creada:', response.data);
+      console.log('Factura creada:', response.data);
       
       // Limpiar carrito y cerrar dialogs
       limpiarCarrito();
@@ -272,17 +308,17 @@ export default function Dashboard() {
       
       // Mostrar número de factura desde la respuesta
       const numeroFactura = response.data?.numeroFactura || response.data?.factura?.numeroFactura || 'N/A';
-      alert(`✅ Venta realizada exitosamente!\nFactura N° ${numeroFactura}`);
+      alert(`Venta realizada exitosamente!\nFactura N° ${numeroFactura}`);
       
     } catch (error) {
-      console.error('❌ Error al crear factura:', error);
+      console.error('Error al crear factura:', error);
       console.error('Detalles del error:', error.response?.data);
       
       const mensajeError = error.response?.data?.message || 
                           error.response?.data?.mensaje || 
                           'Error al procesar la venta. Intente nuevamente.';
       
-      alert(`❌ ${mensajeError}`);
+      alert(`${mensajeError}`);
     }
   };
 

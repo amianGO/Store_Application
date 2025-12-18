@@ -59,6 +59,11 @@ export default function CarritoCompras({ open, onClose, items = [], onUpdateItem
     onUpdateItem(itemId, { descuento: descuentoValido });
   };
 
+  const subTotalCalc = calcularSubtotal();
+  const ivaCalc = calcularIVA();
+  const descuentoTotalCalc = items.reduce((sum, item) => {const itemSubtotal = item.precioUnitario * item.cantidad; const descuentoPct = item.descuento || 0; const descuentoMonto = (descuentoPct / 100) * itemSubtotal; return sum + descuentoMonto;}, 0);
+  const totalCalc = subTotalCalc + ivaCalc - descuentoTotalCalc;
+
   return (
     <Drawer
       anchor="right"
@@ -310,14 +315,16 @@ export default function CarritoCompras({ open, onClose, items = [], onUpdateItem
               >
                 Cancelar
               </Button>
-              
+              {/* Calcular montos antes de enviar - Nuevo*/}
               <Button
                 variant="contained"
                 startIcon={<CreditCard size={20} />}
                 onClick={() => onCheckout({ 
                   items, 
-                  subtotal: calcularSubtotal(),
-                  total: calcularTotal()
+                  subtotal: Number(subTotalCalc.toFixed(2)),
+                  impuesto: Number(ivaCalc.toFixed(2)), 
+                  descuentoTotal: Number(descuentoTotalCalc.toFixed(2)),
+                  total: Number(totalCalc.toFixed(2))
                 })}
                 sx={{
                   flex: 2,

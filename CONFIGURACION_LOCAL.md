@@ -1,6 +1,6 @@
-# 🔧 Configuración Local del Proyecto
+# Configuración Local del Proyecto
 
-## 📋 Pre-requisitos
+## Pre-requisitos
 
 - Java 21 (JDK)
 - PostgreSQL 15+ (corriendo en puerto 5433)
@@ -267,8 +267,8 @@ ALTER USER docker_admin WITH PASSWORD 'nuevo_password';
 **Soluciones:**
 ```properties
 # 1. Verifica que el App Password sea correcto (16 caracteres sin espacios)
-spring.mail.password=abcd efgh ijkl mnop  # ❌ MAL (con espacios)
-spring.mail.password=abcdefghijklmnop     # ✅ BIEN
+spring.mail.password=abcd efgh ijkl mnop  # MAL (con espacios)
+spring.mail.password=abcdefghijklmnop     # BIEN
 
 # 2. Verifica que la verificación en 2 pasos esté activa
 # https://myaccount.google.com/security
@@ -303,8 +303,8 @@ Store_Application/
 │   │   ├── main/
 │   │   │   ├── java/
 │   │   │   └── resources/
-│   │   │       ├── application.properties        # ❌ NO COMMITEAR
-│   │   │       ├── application.properties.example # ✅ Template
+│   │   │       ├── application.properties        # NO COMMITEAR
+│   │   │       ├── application.properties.example # Template
 │   │   │       └── application-prod.properties   # Config producción
 │   │   └── test/
 │   ├── pom.xml
@@ -314,8 +314,8 @@ Store_Application/
 │   ├── src/
 │   ├── public/
 │   ├── package.json
-│   ├── .env                # ❌ NO COMMITEAR (si lo creas)
-│   └── .env.example        # ✅ Template
+│   ├── .env                # NO COMMITEAR (si lo creas)
+│   └── .env.example        # Template
 │
 └── docs/                   # Documentación
     ├── DESPLIEGUE_RAPIDO.md
@@ -327,15 +327,15 @@ Store_Application/
 
 ## 🔐 Archivos Sensibles (NUNCA COMMITEAR)
 
-❌ `inventory_app/src/main/resources/application.properties`  
-❌ `frontend/.env` (si lo creas)  
-❌ Cualquier archivo con passwords, tokens, o API keys
+`inventory_app/src/main/resources/application.properties`  
+`frontend/.env` (si lo creas)  
+Cualquier archivo con passwords, tokens, o API keys
 
 ✅ En su lugar, commitea archivos `.example` sin credenciales reales
 
 ---
 
-## ✅ Checklist de Configuración
+## Checklist de Configuración
 
 - [ ] PostgreSQL instalado y corriendo
 - [ ] Base de datos `app_main` creada

@@ -35,7 +35,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 export default function EmpleadoManagement() {
-  console.log('🔥 EmpleadoManagement RENDERIZANDO');
+  console.log('EmpleadoManagement RENDERIZANDO');
   
   const navigate = useNavigate();
   const [empleados, setEmpleados] = useState([]);
@@ -62,7 +62,7 @@ export default function EmpleadoManagement() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    console.log('📌 useEffect: Cargando empleados...');
+  console.log('useEffect: Cargando empleados...');
     
     // Obtener el rol del usuario desde el token
     const token = localStorage.getItem('token');
@@ -84,11 +84,11 @@ export default function EmpleadoManagement() {
       setLoading(true);
       setError('');
       
-      console.log('📋 Cargando lista de empleados...');
+  console.log('Cargando lista de empleados...');
       
       const response = await api.get('/empresas/empleados');
       
-      console.log('✅ Empleados cargados:', response.data);
+  console.log('Empleados cargados:', response.data);
       
       if (response.data.success) {
         setEmpleados(response.data.empleados || []);
@@ -97,7 +97,7 @@ export default function EmpleadoManagement() {
       }
       
     } catch (err) {
-      console.error('❌ Error al cargar empleados:', err);
+  console.error('Error al cargar empleados:', err);
       setError('Error al cargar la lista de empleados');
       setEmpleados([]);
     } finally {
@@ -219,7 +219,7 @@ export default function EmpleadoManagement() {
     );
   }
 
-  console.log('🎨 Renderizando return principal...');
+  console.log('Renderizando return principal...');
   
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#1e1e2f' }}>
@@ -237,8 +237,8 @@ export default function EmpleadoManagement() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => {
-                console.log('🟢 Botón Nuevo Empleado clickeado');
+                onClick={() => {
+                console.log('Botón Nuevo Empleado clickeado');
                 handleOpenDialog();
               }}
               sx={{

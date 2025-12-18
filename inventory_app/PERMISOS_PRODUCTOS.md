@@ -3,10 +3,10 @@
 ## 📋 Resumen de Permisos
 
 ### **ADMIN** (Administrador)
-- ✅ **Crear** productos
-- ✅ **Ver/Listar** productos
-- ✅ **Editar** productos
-- ✅ **Eliminar** productos
+-- **Crear** productos
+-- **Ver/Listar** productos
+-- **Editar** productos
+-- **Eliminar** productos
 
 ### **VENDEDOR, CAJERO, INVENTARIO** (Otros roles)
 - ✅ **Ver/Listar** productos
@@ -32,16 +32,16 @@
 @CrossOrigin(origins = "http://localhost:5173")
 public class ProductoController {
 
-    // ✅ Listar productos - TODOS los empleados autenticados
+   // Listar productos - TODOS los empleados autenticados
     @GetMapping
     public ResponseEntity<?> getAllProductos() { ... }
 
-    // ✅ Crear producto - Solo ADMIN o EMPRESA
+   // Crear producto - Solo ADMIN o EMPRESA
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('EMPRESA')")
     public ResponseEntity<Producto> createProducto(@RequestBody Producto producto) { ... }
 
-    // ✅ Actualizar producto - Solo ADMIN o EMPRESA
+   // Actualizar producto - Solo ADMIN o EMPRESA
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('EMPRESA')")
     public ResponseEntity<Producto> updateProducto(@PathVariable Long id, @RequestBody Producto producto) { ... }
